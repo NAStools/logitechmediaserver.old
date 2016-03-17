@@ -1,0 +1,15 @@
+PLUGIN_INTERNET_RADIO_MODULE_NAME_DESC
+	CS	Adresáře internetových rádií
+	DA	Katalog over internetradiostationer
+	DE	Internetradio-Verzeichnisse
+	EN	Internet Radio Directories
+	ES	Directorios de radio por Internet
+	FI	Nettiradiohakemistot
+	FR	Répertoires de radios Internet
+	IT	Directory di radio Internet
+	NL	Directory's van internetradio
+	NO	Katalog med nettradiostasjoner
+	PL	Katalogi internetowych stacji radiowych
+	RU	Каталоги радиостанций Интернета
+	SV	Kataloger för webbradio
+
