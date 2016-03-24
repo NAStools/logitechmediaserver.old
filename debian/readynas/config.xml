@@ -8,7 +8,7 @@
   <InfoURL>https://github.com/nastools/logitechmediaserver</InfoURL>
   <DebianPackage>nastools-logitechmediaserver</DebianPackage>
   <ServiceName>fvapp-nastools-logitechmediaserver.service</ServiceName>
-  <Description>Streaming Audio Server</Description>
+  <Description lang="en-us">Streaming Audio Server</Description>
   <ConfigURL/>
   <ReservePort>9200</ReservePort>
 </Application>
