@@ -16,14 +16,9 @@ IR apps/nastools-logitechmediaserver/slimserver
 lib apps/nastools-logitechmediaserver/slimserver
 modules.conf apps/nastools-logitechmediaserver/slimserver
 MySQL apps/nastools-logitechmediaserver/slimserver
-revision.txt apps/nastools-logitechmediaserver/slimserver
 scanner.pl apps/nastools-logitechmediaserver/slimserver
 Slim apps/nastools-logitechmediaserver/slimserver
 slimserver.pl apps/nastools-logitechmediaserver/slimserver
-slimservice-convert.conf apps/nastools-logitechmediaserver/slimserver
-slimservice.pl apps/nastools-logitechmediaserver/slimserver
-slimservice-strings.txt apps/nastools-logitechmediaserver/slimserver
-smem.pl apps/nastools-logitechmediaserver/slimserver
 SQL apps/nastools-logitechmediaserver/slimserver
 strings.txt apps/nastools-logitechmediaserver/slimserver
 types.conf apps/nastools-logitechmediaserver/slimserver
