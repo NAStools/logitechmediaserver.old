@@ -1,7 +1,5 @@
 # Main Logitech Media Server strings file
 
-# $Id$
-
 #
 # This tab-delimited file contains all the text strings used in Logitech Media Server
 # The format should be self explanatory. To submit a new language, or a better
@@ -92,19 +90,19 @@ CREDITS
 	ZH_CN	Kok-Bin Lee
 
 COPYRIGHT
-	CS	© 2001-2012 Logitech Verze 7.7.5
-	DA	© 2001-2012 Logitech - version 7.7.5
-	DE	© 2001-2012 Logitech Version 7.7.5
-	EN	© 2001-2012 Logitech Version 7.7.5
-	ES	© 2001-2012 Logitech Versión 7.7.5
-	FI	© 2001-2012 Logitechin versio 7.7.5
-	FR	© 2001-2012 Logitech Version 7.7.5
-	IT	© 2001-2012 Logitech versione 7.7.5
-	NL	© 2001-2012 Logitech versie 7.7.5
-	NO	© 2001–2012 Logitech versjon 7.7.5
-	PL	© 2001-2012 Logitech wersja 7.7.5
-	RU	© Logitech, 2001-2012. Версия 7.7.5
-	SV	© 2001–2012 Logitech Version 7.7.5
+	CS	© 2001-2011 Logitech Verze 7.9.0
+	DA	© 2001-2011 Logitech - version 7.9.0
+	DE	© 2001-2011 Logitech Version 7.9.0
+	EN	© 2001-2011 Logitech Version 7.9.0
+	ES	© 2001-2011 Logitech Versión 7.9.0
+	FI	© 2001-2011 Logitechin versio 7.9.0
+	FR	© 2001-2011 Logitech Version 7.9.0
+	IT	© 2001-2011 Logitech versione 7.9.0
+	NL	© 2001-2011 Logitech versie 7.9.0
+	NO	© 2001–2011 Logitech versjon 7.9.0
+	PL	© 2001-2011 Logitech wersja 7.9.0
+	RU	© Logitech, 2001-2011. Версия 7.9.0
+	SV	© 2001–2011 Logitech Version 7.9.0
 
 COPYRIGHT_LOGITECH
 	CS	© 2001-2012 Logitech
@@ -122,19 +120,19 @@ COPYRIGHT_LOGITECH
 	SV	© 2001-2012 Logitech
 
 VERSION
-	CS	Verze 7.7.5 / r%s
-	DA	Version 7.7.5 / r%s
-	DE	Version 7.7.5 / r%s
-	EN	Version 7.7.5 / r%s
-	ES	Versión 7.7.5 / r%s
-	FI	Versio 7.7.5 / r%s
-	FR	Version 7.7.5 / r%s
-	IT	Versione 7.7.5/r%s
-	NL	Versie 7.7.5 / r%s
-	NO	Versjon 7.7.5 / r%s
-	PL	Wersja 7.7.5 / r%s
-	RU	Версия 7.7.5 / r%s
-	SV	Version 7.7.5 / r%s
+	CS	Verze 7.9.0 / r%s
+	DA	Version 7.9.0 / r%s
+	DE	Version 7.9.0 / r%s
+	EN	Version 7.9.0 / r%s
+	ES	Versión 7.9.0 / r%s
+	FI	Versio 7.9.0 / r%s
+	FR	Version 7.9.0 / r%s
+	IT	Versione 7.9.0/r%s
+	NL	Versie 7.9.0 / r%s
+	NO	Versjon 7.9.0 / r%s
+	PL	Wersja 7.9.0 / r%s
+	RU	Версия 7.9.0 / r%s
+	SV	Version 7.9.0 / r%s
 
 CHOOSE_A_LANGUAGE
 	CS	Zvolte prosím jazyk
@@ -203,7 +201,7 @@ DEFAULT_SKIN
 	JA	スタンダード
 	NL	Standaard
 	NO	Standard
-	PL	Domyślne
+	PL	Domyślny
 	RU	По умолчанию
 	SV	Standard
 	ZH_CN	缺省
@@ -254,6 +252,7 @@ SERVER_VERSION
 	JA	スリムサーバー・バージョン
 	NL	Logitech Media Server-versie
 	NO	Logitech Media Server-versjon
+	PL	Wersja Logitech Media Server
 	PT	Versão do Logitech Media Server
 	SV	Logitech Media Server-version
 	ZH_CN	Logitech Media Server版本
@@ -987,6 +986,7 @@ ABOUT
 	JA	Logitech Media Server V.%s, 製作:
 	NL	Logitech Media Server V.%s, geschreven door:
 	NO	Logitech Media Server V.%s, skrevet av:
+	PL	Logitech Media Server V.%s, stworzony przez:
 	PT	Logitech Media Server v.%s, escrito por
 	SV	Logitech Media Server v.%s, skriven av:
 	ZH_CN	Logitech Media Server V.%s, 制作:
@@ -1023,7 +1023,7 @@ ZAPPING_FROM_PLAYLIST
 	JA	プレイ リストから消去:
 	NL	Verplaatsen naar gezapte liedjes playlist:
 	NO	Flytter til spillelisten «Zappede sanger»:
-	PL	Przenoszenie do listy odtwarzania Utwory połączone:
+	PL	Przenoszenie do schowka:
 	PT	Mover para a playlist rápida de músicas
 	RU	В плей-лист "Стертые песни":
 	SV	Flyttar till spellistan med ignorerade låtar.
@@ -1042,7 +1042,7 @@ ZAPPED_SONGS
 	JA	消去された曲
 	NL	Gezapte liedjes
 	NO	Zappede sanger
-	PL	Utwory połączone
+	PL	Schowek
 	PT	Playlist Rápida de Músicas
 	RU	Стертые песни
 	SV	Ignorerade låtar
@@ -1447,7 +1447,7 @@ SLEEPING_IN
 	JA	スリープ
 	NL	Sluimermodus in
 	NO	Hvilemodus om
-	PL	Usypianie
+	PL	Uśpienie za
 	PT	Inactivo dentro de
 	RU	Спящий режим после
 	SV	Viloläge aktiveras om
@@ -1645,7 +1645,7 @@ ALARM_ALARM
 	IT	Sveglia
 	NL	Wekker
 	NO	Alarm
-	PL	Alarm
+	PL	Budzik
 	RU	Будильник
 	SV	Alarm
 
@@ -1969,7 +1969,7 @@ ALARM_FADE
 	IT	Sveglia graduale
 	NL	Weksignaal infaden
 	NO	Skru vekkerklokken på gradvis
-	PL	Stopniowo zwiększaj głośność alarmów
+	PL	Stopniowo zwiększaj głośność
 	RU	Усиление сигналов будильников
 	SV	Tona in alarm
 	ZH_CN	闹钟缓慢切入
@@ -2064,7 +2064,7 @@ ALARM_SNOOZE
 	IT	Snooze sveglia in corso...
 	NL	Weksignaal wordt gesnoozed...
 	NO	Slumrer vekkerklokken ...
-	PL	Odkładanie alarmu...
+	PL	Drzemka...
 	RU	В режим повтора сигнала...
 	SV	Aktiverar snoozefunktion...
 
@@ -2443,7 +2443,7 @@ SQUEEZEBOX2
 	IT	Squeezebox2/v3
 	NL	Squeezebox2/v3
 	NO	Squeezebox2/v3
-	PL	Squeezebox2/wer. 3
+	PL	Squeezebox2/v3
 	RU	Squeezebox2/v3
 	SV	Squeezebox 2/v3
 
@@ -2492,7 +2492,7 @@ WELCOME_TO_SLIMP3
 	JA	SLIMP3へようこそ
 	NL	Welkom bij SLIMP3
 	NO	Velkommen til SLIMP3
-	PL	SLIMP3 - zapraszamy
+	PL	SLIMP3 — Zapraszamy
 	PT	Bem-vindo ao SLIMP3
 	RU	Добро пожаловать в SLIMP3!
 	SV	Välkommen till SLIMP3!
@@ -3126,6 +3126,7 @@ PLAYLIST_PROBLEM_CONNECTING
 	IT	Errore: impossibile eseguire la connessione per recuperare l'elenco di riproduzione
 	NL	Fout: Kan geen verbinding maken om playlist op te halen
 	NO	Feil: Kan ikke koble til for å hente spilleliste
+	PL	Błąd: nie można połączyć się, aby odzyskać listę odtwarzania
 	SV	Fel: Kan inte ansluta för att hämta spellista
 	ZH_CN	失误：无法取得播放表
 
@@ -3267,7 +3268,7 @@ XML_GET_FAILED
 	IT	Analisi non riuscita
 	NL	Kan niet parseren
 	NO	Tolking mislyktes
-	PL	Analiza nie powiodła się
+	PL	Błąd przetwarzania
 	RU	Сбой анализа
 	SV	Det gick inte att tolka
 	ZH_CN	解析失误
@@ -3352,7 +3353,7 @@ XML_ENCLOSURE
 	IT	Allegato
 	NL	Bijlage
 	NO	Vedlegg
-	PL	Obudowa
+	PL	Załącznik
 	RU	Вложение
 	SV	Kabinett
 	ZH_CN	框架
@@ -3369,7 +3370,7 @@ XML_AUDIO_ENCLOSURES
 	IT	Allegati audio
 	NL	Audiobijlagen
 	NO	Lydvedlegg
-	PL	Obudowy audio
+	PL	Załączniki audio
 	RU	Аудиовложения
 	SV	Högtalarkabinett
 	ZH_CN	音频框架
@@ -3386,7 +3387,7 @@ XML_FEED_DESCRIPTION
 	IT	Informazioni su questo feed
 	NL	Over deze feed
 	NO	Om denne feeden
-	PL	Informacje o tym źródle
+	PL	Informacje o źródle
 	RU	Об этом веб-канале
 	SV	Om det här flödet
 	ZH_CN	关于这饲址
@@ -3437,7 +3438,7 @@ XML_EXPLICIT
 	IT	Esplicito
 	NL	Expliciet
 	NO	Støtende
-	PL	Jawne
+	PL	Bez cenzury
 	RU	Непристойный
 	SV	Explicit
 	ZH_CN	说明
@@ -3604,7 +3605,7 @@ SETUP_PLAYER_TITLEFORMATS_DESC
 	JA	これらは上記とプレーヤーセットアップに利用できるフォーマットです。フォーマットを削除するには、テキストボックスをクリアし、新しいフォーマットを加えるには空のテキストボックスに入れてください。利用できるデータは： CT（コンテントタイプ）、TITLE（タイトル）、GENRE（ジャンル）、TRACKNUM(トラックナンバー)、FS（ファイルサイズ）、ARTIST（アーチスト)、ALBUM（アルバム)、COMMENT（コメント)、YEAR（年）、SECS（総秒数）、DURATION（長さ)、BITRATE（ビットレート)、LONGDATE（長い日付）、SHORTDATE（短い日付)、CURRTIME（現在の時間）。各データは何で区分してもかまいません。<br>現在のフォーマット選択はウェブ上で使われているものと同じです。
 	NL	Dit zijn de indelingen die geselecteerd kunnen worden, zowel in de webinterface als in de instellingen van je muzieksysteem. Als je een indeling wilt verwijderen, maak je het tekstvakje leeg. Wil je een indeling toevoegen, dan zet je het in een leeg vakje. Beschikbare gegevenselementen zijn: CT (inhoudstype), TITLE, GENRE, TRACKNUM (tracknummer als int), FS (bestandsgrootte), ARTIST, COMPOSER, CONDUCTOR, BAND, ALBUM, COMMENT, YEAR, SECS (totaalaantal seconden), DURATION (minuten en seconden), BITRATE, LONGDATE (huidige datum, lang), SHORTDATE (huidige datum, kort), CURRTIME (huidige tijd). De elementen kunnen door alles (of niets) gescheiden geworden. De scheidingstekens worden alleen gebruikt als de gegevenselementen aanwezig zijn.<br> De huidige selectie is de indeling die op de webpagina's gebruikt zal worden.
 	NO	Dette er formatene som er tilgjengelige både i nettgrensesnittet og på spillerne. Tøm boksen for å fjerne et format. Du legger til et nytt format ved å oppgi det i en tom boks. Tilgjengelige dataelementer er CT (innholdstype), TITLE (tittel), GENRE (sjanger), TRACKNUM (spornummer), FS (filstørrelse), ARTIST, COMPOSER (komponist), CONDUCTOR (dirigent), BAND, ALBUM, COMMENT (kommentar), YEAR (år), SECS (totalt antall sekunder, oppgitt som et heltall), DURATION (minutter og sekunder), BITRATE, LONGDATE (dagens dato i langt format), SHORTDATE (dagens dato i kort format) og CURRTIME (klokkeslett nå). Elementer kan separeres med ethvert tegn, eller ingen. Skilletegnet vises bare om dataelementet finnes.<br>Det valgte formatet er det som blir brukt på nettsidene.
-	PL	Są to formaty dostępne do wyboru w interfejsie internetowym i w odtwarzaczach. Aby usunąć format, wyczyść pole tekstowe; aby wprowadzić nowy format, wpisz go w pustym polu. Dostępne elementy danych to: CT (typ zawartości), TITLE, GENRE, TRACKNUM (numer utworu jako liczba rzeczywista), FS (rozmiar pliku), ARTIST, COMPOSER, CONDUCTOR, BAND, ALBUM, COMMENT, YEAR, SECS (całkowita liczba sekund), DURATION (minuty i sekundy), LONGDATE (bieżąca data, długa), SHORTDATE (bieżąca data, krótka), CURRTIME (bieżąca godzina). Elementy mogą być rozdzielone dowolnym znakiem (lub nierozdzielone). Separatory są używane tylko wtedy, gdy występują elementy danych.<br>Aktualny wybór to format, który będzie używany na stronach internetowych.
+	PL	Są to formaty dostępne do wyboru w odtwarzaczu. Aby wprowadzić nowy format do wyboru na odtwarzaczu, wybierz jeden z listy rozwijanej i zapisz ustawienia.<br>Aktualny wybór to format, który będzie używany na odtwarzaczu.<br>Jeżeli chcesz dodać nowy format, niedostępny w liscie rozwijanej, przejdź do: Ustawienia serwera > Interfejs > Format tytułu
 	PT	Aqui poderá definir o formato da descrição da música que aparece acima e no cliente. Para remover um campo, limpe a caixa do texto. Para adicionar um campo, adicione-o numa caixa vazia. Os campos disponíveis são
 	RU	Данные форматы доступны для выбора в веб-интерфейсе и плеерах. Чтобы удалить формат, снимите для него флажок, чтобы ввести новый формат, установите флажок в пустое поле. Доступные элементы данных: CT (тип содержимого), TITLE, GENRE, TRACKNUM (номер дорожки в виде целого числа), FS (размер файла), ARTIST, COMPOSER, CONDUCTOR, BAND, ALBUM, COMMENT, YEAR, SECS (общее число секунд), DURATION (число минут и секунд), VBR_SCALE (vbr/cbr), BITRATE, TAGSIZE, VOLUME (имя тома), PATH, FILE, EXT (расширение файла), LONGDATE (текущая дата, длинный формат), SHORTDATE (текущая дата, краткий формат), CURRTIME (текущее время). Элементы могут разделяться каким-либо символом (или никаким). Разделители используются только при наличии элементов данных.<br>«Текущий выбор» — это формат, который будет использоваться на веб-страницах.
 	SV	Dessa är de tillgängliga formaten för webbgränssnittet och själva spelaren. Töm textboxen för att ta bort ett format. Skriv i en tom textbox för att lägga till ett nytt format. Tillgängliga dataelement: CT (content type), TITLE, GENRE, TRACKNUM (spårnummer), FS (filstorlek), ARTIST, COMPOSER, CONDUCTOR, BAND, ALBUM, COMMENT (kommentar), YEAR (år), SECS (totala antalet sekunder), DURATION (minuter och sekunder, BITRATE, LONGDATE (dagens datum, långt), SHORTDATE (dagens datum, kort), CURRTIME (aktuell tid). Skiljetecken kan användas för att separera dataelementen. Ett skiljetecken kan vara vilket tecken som helst (eller inget tecken alls). Skiljetecken visas endast om dataelementet existerar.<br>Det valda formatet är det som kommer användas på websidorna.
@@ -3623,6 +3624,7 @@ SETUP_GROUP_MENUITEMS
 	JA	ホーム メニュー カスタマイズ
 	NL	Hoofdmenu
 	NO	Tilpass hovedmenyen
+	PL	Dostosowanie głównego menu
 	PT	Personalização do Menu Inicial
 	SV	Konfigurering av huvudmenyn
 	ZH_CN	主页菜单
@@ -3650,7 +3652,7 @@ SETUP_GROUP_NONMENUITEMS_INTRO
 	CS	Neaktivní položky nabídky:
 	DA	Inaktive menupunkter:
 	DE	Inaktive Menüeinträge:
-	EN	Inactive menu items:
+	EN	Inactive Menu Items:
 	ES	Elementos de menú inactivos:
 	FI	Passiiviset valikkokohdat:
 	FR	Eléments de menu inactifs:
@@ -5214,70 +5216,6 @@ SETUP_PACKETLATENCY_DESC
 	RU	Logitech Media Server автоматически измеряет задержку в сети между ним и плеером. Это важно для сохранения синхронизации. Иногда эти измерения могут слишком отличаться друг от друга, чтобы выявить какую-то закономерность: в этом случае можно ввести типичное значение в данное поле.
 	SV	Logitech Media Server mäter automatiskt nätverksfördröjningen mellan sig själv och spelaren. Det här är viktigt när du vill upprätthålla synkronisering. Ibland ger mätningarna så spridda resultat att de inte är användbara. I så fall anger du ett typvärde här.
 
-SETUP_NOUPNP
-	CS	Klient UPnP
-	DA	UPnP-klient
-	DE	UPnP-Client
-	EN	UPnP Client
-	ES	Cliente UPnP
-	FI	UPnP-asiakas
-	FR	Client UPnP
-	HE	לקוח UPnP
-	IT	Client UPnP
-	NL	UPnP-client
-	NO	UPnP-klient
-	PL	Klient UPnP
-	RU	Клиент UPnP
-	SV	UPnP-klient
-
-SETUP_NOUPNP_DESC
-	CS	Má Logitech Media Server hledat na vaší síti další servery médií UPnP?
-	DA	Skal Logitech Media Server søge efter andre UPnP-medieservere på dit netværk?
-	DE	Soll Logitech Media Server nach weiteren UPnP-Medienservern in Ihrem Netzwerk suchen?
-	EN	Should Logitech Media Server look for other UPnP media servers on your network?
-	ES	¿Debe Logitech Media Server buscar otros servidores de medios UPnP en la red?
-	FI	Haluatko, että Logitech Media Server etsii muita UPnP-mediapalvelimia verkosta?
-	FR	Le Logitech Media Server doit-il rechercher d'autres serveurs UPnP sur le réseau?
-	HE	האם ברצונך ש-Logitech Media Server יחפש אחר שרתי מדיה אחרים מסוג UPnP ברשת שלך?
-	IT	Cercare altri server multimediali UPnP nella rete?
-	NL	Moet Logitech Media Server naar andere UPnP-mediaservers op je netwerk zoeken?
-	NO	Vil du at Logitech Media Server skal se etter andre UPnP-medieservere i nettverket?
-	PL	Czy program Logitech Media Server ma wyszukać inne serwery multimediów UPnP w sieci?
-	RU	Выполнить поиск других медиа-серверов UPnP в вашей сети?
-	SV	Ska Logitech Media Server söka efter andra UPnP-medieservrar på nätverket?
-
-SETUP_UPNP_ENABLE
-	CS	Aktivováno, hledat další servery médií UPnP.
-	DA	Aktiveret; søg efter andre UPnP-medieservere.
-	DE	Ja, nach weiteren UPnP-Medienservern suchen.
-	EN	Enabled, look for other UPnP media servers.
-	ES	Activado, buscar otros servidores de medios UPnP.
-	FI	Käytössä, etsi muita UPnP-mediapalvelimia.
-	FR	Activé, rechercher d'autres serveurs UPnP.
-	HE	מופעל, חפש אחר שרתי מדיה אחרים מסוג UPnP.
-	IT	Attivato. Cerca altri server multimediali UPnP.
-	NL	Ingeschakeld, naar andere UPnP-mediaservers zoeken.
-	NO	På, se etter andre UPnP-medietjenere.
-	PL	Włączone, znajdź inne serwery multimediów UPnP.
-	RU	Включено, поиск других медиа-серверов UPnP.
-	SV	Aktiverad: Sök efter andra UPnP-medieservrar.
-
-SETUP_UPNP_DISABLE
-	CS	Vypnuto, nehledat další UPnP servery médií.
-	DA	Deaktiveret. Søg ikke efter andre UPnP-medieservere.
-	DE	Nein, nicht nach UPnP-Medienservern suchen.
-	EN	Disabled, do not look for other UPnP media servers.
-	ES	Desactivado, no buscar otros servidores de medios UPnP.
-	FI	Ei käytössä, älä etsi muita UPnP-mediapalvelimia.
-	FR	Désactivé, ne pas rechercher d'autres serveurs UPnP.
-	HE	מושבת, אל תחפש אחר שרתי מדיה אחרים מסוג UPnP.
-	IT	Disattivato. Non cercare altri server multimediali UPnP.
-	NL	Uitgeschakeld, niet naar andere UPnP-mediaservers zoeken.
-	NO	Av. Logitech Media Server vil ikke se etter andre UPnP-medieservere.
-	PL	Wyłączone, nie wyszukuj innych serwerów multimediów UPnP.
-	RU	Отключено, не выполнять поиск других медиа-серверов UPnP.
-	SV	Aktiverad. Sök inte efter andra UPnP-medieservrar.
-
 SETUP_MAXBITRATE
 	CS	Omezení Bitrate (přenosové rychlosti)
 	DA	Begrænsning af bithastighed
@@ -5523,6 +5461,20 @@ SETUP_REPLAYGAINMODE_DESC
 	RU	На некоторых аудиодорожках содержатся сведения выравнивания громкости (алгоритм Replay Gain), которые обеспечивают одинаковую громкость воспроизведения дорожек и альбомов. Плеер может использовать эту информацию (если она есть). При выравнивании громкости по дорожкам достигается одинаковая громкость всех дорожек. При выравнивании громкости по альбомам — одинаковая громкость для всех альбомов, при этом различия в громкости дорожек в пределах одного альбома сохраняются. При интеллектуальном выравнивании используется выравнивание по альбомам, если последующие песни входят в тот же альбом, либо выравнивание по дорожкам, если плей-лист состоит из песен разных альбомов.
 	SV	Vissa ljudspår innehåller volymjusteringar (Replay Gain), information som kan användas för att få alla spår och album att spelas upp med samma volym Om det finns sådan här information kan spelaren använda den. Volymutjämning av spår (Track Gain) kan användas för att se till att alla spår har samma volym. Volymutjämning av album kan användas för att se till att alla album har samma volym utan att volymskillnader mellan olika låtar på ett album ändras. Smart volymutjämning innebär att ser till att volymutjämningen av album används när låtar som spelas upp efter varandra kommer från samma album, medan volymutjämningen av spår används med blandade spellistor.
 
+SETUP_REPLAYGAIN_REMOTE
+	DE	Anpassung für Internet-Streams
+	EN	Default Adjustment for Remote Streams
+	FR	Ajustement du volume pour le streaming Internet
+	NL	Aanpassing voor internetstreams
+	PL	Domyślna wartość dla zdalnych strumieni
+	 	
+SETUP_REPLAYGAIN_REMOTE_DESC
+	DE	Internet Streaming Dienste stellen selten Werte für die Lautstärken-Normalisierung zur Verfügung. Dies kann dazu führen, dass Musikstücke von Online-Diensten erheblich lauter wiedergegeben werden, als lokale Musikstücke. Definiere einen Standard-Wert, der bei Internet-Streams verwendet werden soll.
+	EN	Remote streaming service often don't support any form of volume adjustment. If you're playing remote tracks mixed in with local tracks, this can lead to undesired volume changes. Define a default value which should be applied to any remote stream not defining a volume adjustment value itself.
+	FR	La musique en streaming sur Internet donne rarement le gain pour ajuster le volume. Cela peut conduire à subir des variations importantes de volume entre des morceaux en ligne et de la musqique en local. Définir une valeur par défaut à utiliser pour le streaming sur Internet si l'information de normalisation est absente.
+	NL	Online streamingdiensten bieden meestal geen vorm van volumenormalisering aan. Als je deze internetstreams mixt met locale bestanden, kan dit leiden tot ongewenste veranderingen in het volume. Bepaal een standaardwaarde die bij internetstreams moet worden gebruikt.
+	PL	Zdalne strumienie często nie przesyłają żadnych danych, które pozwalałyby na automatyczne dopasowanie głośności. Odtwarzanie utworów ze zdalnych strumieni wymieszanych z lokalnymi utworami może doprowadzić do niepożądanych zmian głośności. Ustal domyślną wartość, która będzie użyta dla każdego zdalnego strumienia, który nie określa własnego poziomu głośności.
+
 REPLAYGAIN_DISABLED
 	CS	Žádné nastavení hlasitosti
 	DA	Ingen lydstyrkeregulering
@@ -5641,36 +5593,34 @@ ALBUMREPLAYGAIN
 	ZH_CN	专辑音量调整
 
 SETUP_MP3STREAMINGMETHOD
-	CS	Metoda MP3 datových přenosových proudů
-	DA	MP3-streamingmetode
-	DE	MP3-Streaming-Methode
-	EN	MP3 Streaming Method
-	ES	Método de secuencias MP3
-	FI	MP3-virtautustapa
-	FR	Méthode de diffusion d'un fichier MP3
-	HE	שיטת הזרמה של תבנית MP3
-	IT	Metodo di streaming MP3
-	NL	MP3 streaming methode
-	NO	Mp3-strømmingsmetode
-	PL	Metoda strumieniowego przesyłania plików MP3
-	RU	Метод потоковой передачи MP3
-	SV	Mp3-strömningsmetod
+	CS	Metoda datových přenosových proudů
+	DA	Streamingmetode
+	DE	Streaming-Methode
+	EN	Streaming Method
+	ES	Método de secuencias
+	FI	Virtautustapa
+	FR	Méthode de diffusion d'un fichier
+	IT	Metodo di streaming
+	NL	Streaming methode
+	NO	Strømmingsmetode
+	PL	Metoda strumieniowego przesyłania plików
+	RU	Метод потоковой передачи
+	SV	Strömningsmetod
 
 SETUP_MP3STREAMINGMETHOD_DESC
-	CS	Při přehrávání MP3 Internet proudu, může být přehrávání datových proudů provedeno jedním ze dvou způsobů. při Direct Streaming přehrávač provede přímé spojení se serverem přehrávání audio proudů a tím mírně sníží zatížení Squeeze Center a umožní přehrávání proudu i po ztrátě spojení Squeeze Center. Proxy Streaming způsobí, že Logitech Media Server zajistí spojení a přehraje audio prostřdnictvím přehrávače.  Direct Streaming je výchozí nastavení, ale jestliže budete mít potíže s s MP3 proudy, zkuste změnit nastavení na Proxy Streaming. Pamatujte na to, že pokud jsou s MP3 proudem synchronizovány dva a více přehrávačů, použije se vždy Proxy Streaming k omezení použití širokopásmového přenosu.
-	DA	Når der afspilles en mp3-stream fra internettet, kan det gøres på to måder. Ved direkte streaming etableres der en direkte forbindelse mellem afspilleren og serveren der streames fra. Det reducerer belastningen af Logitech Media Server en smule og afspilningen fortsætter selvom forbindelsen til Logitech Media Server bliver afbrudt. Ved streaming via en proxy vil Logitech Media Server håndtere forbindelsen og sende lyden videre til afspilleren. Direkte streaming er standardmetoden, men hvis du har problemer med mp3-streams, kan du ændre indstillingen til Streaming via proxy. Bemærk at hvis to eller flere afspillere er synkroniseret til en mp3-stream, bliver proxymetoden altid anvendt for at begrænse brugen af båndbredde.
-	DE	Zur Wiedergabe eines MP3-Internet-Streams kann das Streaming auf zwei verschiedene Arten durchgeführt werden. Beim direkten Streaming erstellt der Player eine direkte Verbindung mit dem Audio-Streaming-Server, wodurch die Belastung von Logitech Media Server verringert wird und der Stream auch fortgesetzt werden kann, wenn die Verbindung zu Logitech Media Server unterbrochen wird. Beim Streaming über einen Proxy-Server verwaltet Logitech Media Server die Verbindung und leitet die Musik an den Player weiter. Standardmäßig wird das direkte Streaming verwendet, aber wenn Probleme mit MP3-Streams auftreten, können Sie die andere Methode versuchen. Hinweis: Wenn zwei oder mehre Player synchron auf einem MP3-Stream zugreifen, wird immer das Streaming über einen Proxy-Server verwendet, um die Bandbreitennutzung zu reduzieren.
-	EN	When playing an MP3 Internet stream, the streaming can be done in one of two ways.  Direct Streaming causes the player to make a direct connection to the audio streaming server, reducing the load on Logitech Media Server slightly and allowing the stream to continue playing if the Logitech Media Server connection is lost.  Proxied Streaming causes Logitech Media Server to handle the connection, passing the audio through to the player.  Direct Streaming is the default, but if you experience problems with MP3 streams, try changing this setting to Proxied Streaming.  Note that if two or more players are synchronized to an MP3 stream, proxied streaming is always used to reduce bandwidth usage.
-	ES	Al reproducir secuencias MP3 de Internet, el envío por secuencias puede realizarse de dos maneras. Secuencias directas hace que el reproductor establezca una conexión directa con el servidor de secuencias de audio. Esto reduce ligeramente la carga en Logitech Media Server y permite que las secuencias se sigan reproduciendo si se pierde la conexión con Logitech Media Server. Secuencias por proxy hace que Logitech Media Server gestione la conexión y que el audio pase a través del reproductor. Secuencias directas es la opción predeterminada pero, si tiene problemas con secuencias MP3, cambie a Secuencias por proxy. Tenga en cuenta que si hay dos o más reproductores sincronizados con una secuencia MP3, se usa siempre Secuencias por proxy para reducir el uso de ancho de banda.
-	FI	Kun toistetaan MP3 internet -virtaa, virtautus voidaan suorittaa kahdella tavalla.  Jos valitaan suora virtautus, soitin muodostaa suoran yhteyden äänen virtautuspalvelimeen. Tämä vähentää Logitech Media Serverin kuormitusta lievästi. Virran toistoa voidaan myös jatkaa, jos Logitech Media Serverin yhteys katkeaa.  Jos valitaan virtautus välityspalvelimen kautta, Logitech Media Server huolehtii yhteydestä ja välittää äänen soittimeen. Oletus on suora virtautus, mutta jos MP3-virtojen kanssa esiintyy ongelmia, kokeile vaihtaa välityspalvelimen kautta virtautukseen.  Huomaa, että jos vähintään kaksi palvelinta on synkronoitu MP3-virtaan, käytetään aina välityspalvelimen kautta virtautusta, koska se vähentää kaistanleveyden käyttöä.
-	FR	Il existe deux manières de diffuser un flux MP3 sur Internet. La diffusion directe permet à la platine de se connecter directement au serveur de diffusion audio, réduisant ainsi la charge sur le Logitech Media Server et permettant de poursuivre la lecture du flux en cas de perte de la connexion. La diffusion par proxy permet au Logitech Media Server de gérer la connexion et de transmettre le flux audio vers la platine. La diffusion directe est l'option sélectionnée par défaut. Si vous rencontrez des problèmes lors de la lecture des flux MP3, sélectionnez l'option de diffusion par proxy. Notez que si plusieurs platines sont synchronisées pour utiliser un flux MP3, c'est la diffusion proxy qui est utilisée afin de réduire l'utilisation de bande passante.
-	HE	בעת הפעלה של זרימת אינטרנט בתבנית MP3, ניתן להפעיל את הזרימה באחת משתי דרכים. זרימה ישירה גורמת לנגן ליצור חיבור ישיר לשרת הזרימה של השמע, לצמצום קל של העומס על Logitech Media Server וכדי לאפשר לזרימה להימשך במקרה של אובדן החיבור של Logitech Media Server. זרימה ב-Proxy גורמת ל-Logitech Media Server לטפל בחיבור, להעברת השמע לנגן. זרימה ישירה היא ברירת המחדל, אך אם אתה נתקל בבעיות עם זרימות של MP3, נסה לשנות את ההגדרה לזרימה ב-Proxy. שים לב שאם לפחות שני נגנים מסונכרנים לזרימה מסוג MP3, תמיד נעשה שימוש בזרימה ב-Proxy לצמצום השימוש ברוחב הפס.
-	IT	Quando si riproduce uno stream Internet MP3 si possono utilizzare due metodi. Con il metodo dello streaming diretto il riproduttore si collega direttamente al server di streaming audio. Ciò consente di ridurre leggermente il carico di Logitech Media Server e di proseguire la riproduzione dello stream anche nel caso in cui la connessione con Logitech Media Server venga persa. Con il metodo dello streaming tramite proxy la gestione della connessione viene effettuata da Logitech Media Server, il quale passa l'audio al riproduttore. Lo streaming diretto è il metodo predefinito. Se tuttavia si riscontrassero problemi con gli stream MP3, provare a utilizzare il metodo dello streaming tramite proxy. Si noti che se due o più lettori sono sincronizzati su uno stream MP3, viene sempre utilizzato il metodo dello streaming tramite proxy per ridurre l'utilizzo della banda.
-	NL	Het afspelen van een mp3-internetstream kan op twee manieren. Directe streaming: het muzieksysteem maakt een directe verbinding met de server die de audio streamt. Je Logitech Media Server wordt hierdoor minder belast en de stream speelt door als de verbinding tussen het muzieksysteem en de Logitech Media Server wordt verbroken. Proxystreaming: de Logitech Media Server zorgt voor de verbinding en geeft de audiostream door aan het muzieksysteem. Directe streaming is de standaard, maar als dit problemen oplevert, kun je proxystreaming proberen. Let op: Als je twee of meer muzieksystemen synchroniseert op een mp3-stream, wordt proxystreaming automatisch ingesteld om zo de gebruikte bandbreedte te minimaliseren.
-	NO	Avspilling av mp3-strømmer fra Internett kan gjøres på to måter: Hvis du bruker direktestrøm oppretter spilleren en direkte forbindelse til serveren som sender lydstrømmen. Det gir litt mindre belastning på Logitech Media Server-maskinen, og strømmen kan spilles av selv om forbindelsen til denne blir brutt. Det er også mulig å sende datastrømmen gjennom Logitech Media Server, som da opptrer som en proxy. Dette kalles proxystrømming. Direktestrømming er standard, men hvis du får problemer med mp3-strømmer, kan du prøve å endre innstillingen til proxystrømming i stedet. Merk: hvis to eller flere spillere er synkronisert med en mp3-strøm, brukes proxystrømming alltid, for å redusere båndbreddebruken.
-	PL	Podczas odtwarzania internetowego strumienia MP3 przesyłanie strumieniowe wykonywane jest na dwa sposoby. Bezpośrednie przesyłanie strumieniowe powoduje połączenie z serwerem strumieniowego przesyłania dźwięku, co nieznacznie zmniejsza obciążenie programu Logitech Media Server i umożliwia kontynuację odtwarzania strumienia, jeżeli połączenie z programem Logitech Media Server zostanie utracone. Przesyłanie strumieniowe z wykorzystaniem serwera proxy powoduje, że program Logitech Media Server obsługuje połączenie, przekazując dźwięk do odtwarzacza. Bezpośrednie przesyłanie strumieniowe to metoda domyślna, ale w przypadku problemów ze strumieniami MP3 należy zmienić ustawienie na Przesyłanie strumieniowe przez serwer proxy. Należy pamiętać, że jeżeli ze strumieniem MP3 zsynchronizowane są co najmniej dwa odtwarzacze, zawsze używane jest przesyłanie strumieniowe przez serwer proxy w celu ograniczenia użycia przepustowości.
-	RU	Поддерживается два способа потоковой передачи МР3 из Интернета. При прямой передаче плеер напрямую подключается к серверу потокового аудио, что несколько уменьшает нагрузку на Logitech Media Server и позволяет продолжать воспроизведение потока в случае разрыва подключения к Logitech Media Server. При передаче через прокси Logitech Media Server обслуживает подключение, передавая аудиоданные плееру. По умолчанию задана прямая потоковая передача, но если возникают проблемы с потоком МР3, можно попробовать переключиться на опосредованную передачу. Помните: если два и более плееров настраиваются на один поток МР3, всегда применяется опосредованная передача для сужения полосы пропускания.
-	SV	När du spelar upp en mp3-ström från Internet kan det ske på två olika sätt. Direktströmning innebär att spelaren ansluts direkt till servern som strömmen kommer ifrån, vilket minskar belastningen på Logitech Media Server något och gör det möjligt att fortsätta spela även om anslutningen till Logitech Media Server skulle brytas. Proxyströmmning innebär att Logitech Media Server ansluts till servern och sedan vidarebefordrar ljudet till spelaren. Direktströmning är standard. Om du har problem med mp3-strömmar kan du prova att ändra inställningen till Proxyströmning. Observera att proxyströmning alltid används när flera spelare synkroniseras för att spela upp samma mp3-ström, eftersom detta sparar bandbredd.
+	CS	Při přehrávání Internet proudu, může být přehrávání datových proudů provedeno jedním ze dvou způsobů. při Direct Streaming přehrávač provede přímé spojení se serverem přehrávání audio proudů a tím mírně sníží zatížení Squeeze Center a umožní přehrávání proudu i po ztrátě spojení Squeeze Center. Proxy Streaming způsobí, že Logitech Media Server zajistí spojení a přehraje audio prostřdnictvím přehrávače.  Direct Streaming je výchozí nastavení, ale jestliže budete mít potíže s s proudy, zkuste změnit nastavení na Proxy Streaming. Pamatujte na to, že pokud jsou s proudem synchronizovány dva a více přehrávačů, použije se vždy Proxy Streaming k omezení použití širokopásmového přenosu.
+	DA	Når der afspilles en stream fra internettet, kan det gøres på to måder. Ved direkte streaming etableres der en direkte forbindelse mellem afspilleren og serveren der streames fra. Det reducerer belastningen af Logitech Media Server en smule og afspilningen fortsætter selvom forbindelsen til Logitech Media Server bliver afbrudt. Ved streaming via en proxy vil Logitech Media Server håndtere forbindelsen og sende lyden videre til afspilleren. Direkte streaming er standardmetoden, men hvis du har problemer med streams, kan du ændre indstillingen til Streaming via proxy. Bemærk at hvis to eller flere afspillere er synkroniseret til en stream, bliver proxymetoden altid anvendt for at begrænse brugen af båndbredde.
+	DE	Zur Wiedergabe eines Internet-Streams kann das Streaming auf zwei verschiedene Arten durchgeführt werden. Beim direkten Streaming erstellt der Player eine direkte Verbindung mit dem Audio-Streaming-Server, wodurch die Belastung von Logitech Media Server verringert wird und der Stream auch fortgesetzt werden kann, wenn die Verbindung zu Logitech Media Server unterbrochen wird. Beim Streaming über einen Proxy-Server verwaltet Logitech Media Server die Verbindung und leitet die Musik an den Player weiter. Standardmäßig wird das direkte Streaming verwendet, aber wenn Probleme mit Streams auftreten, können Sie die andere Methode versuchen. Hinweis: Wenn zwei oder mehre Player synchron auf einem Stream zugreifen, wird immer das Streaming über einen Proxy-Server verwendet, um die Bandbreitennutzung zu reduzieren.
+	EN	When playing an Internet stream, the streaming can be done in one of two ways.  Direct Streaming causes the player to make a direct connection to the audio streaming server, reducing the load on Logitech Media Server slightly and allowing the stream to continue playing if the Logitech Media Server connection is lost.  Proxied Streaming causes Logitech Media Server to handle the connection, passing the audio through to the player.  Direct Streaming is the default, but if you experience problems with streams, try changing this setting to Proxied Streaming.  Note that if two or more players are synchronized to an stream, proxied streaming is always used to reduce bandwidth usage.
+	ES	Al reproducir secuencias de Internet, el envío por secuencias puede realizarse de dos maneras. Secuencias directas hace que el reproductor establezca una conexión directa con el servidor de secuencias de audio. Esto reduce ligeramente la carga en Logitech Media Server y permite que las secuencias se sigan reproduciendo si se pierde la conexión con Logitech Media Server. Secuencias por proxy hace que Logitech Media Server gestione la conexión y que el audio pase a través del reproductor. Secuencias directas es la opción predeterminada pero, si tiene problemas con secuencias, cambie a Secuencias por proxy. Tenga en cuenta que si hay dos o más reproductores sincronizados con una secuencia, se usa siempre Secuencias por proxy para reducir el uso de ancho de banda.
+	FI	Kun toistetaan internet -virtaa, virtautus voidaan suorittaa kahdella tavalla.  Jos valitaan suora virtautus, soitin muodostaa suoran yhteyden äänen virtautuspalvelimeen. Tämä vähentää Logitech Media Serverin kuormitusta lievästi. Virran toistoa voidaan myös jatkaa, jos Logitech Media Serverin yhteys katkeaa.  Jos valitaan virtautus välityspalvelimen kautta, Logitech Media Server huolehtii yhteydestä ja välittää äänen soittimeen. Oletus on suora virtautus, mutta jos virtojen kanssa esiintyy ongelmia, kokeile vaihtaa välityspalvelimen kautta virtautukseen.  Huomaa, että jos vähintään kaksi palvelinta on synkronoitu virtaan, käytetään aina välityspalvelimen kautta virtautusta, koska se vähentää kaistanleveyden käyttöä.
+	FR	Il existe deux manières de diffuser un flux sur Internet. La diffusion directe permet à la platine de se connecter directement au serveur de diffusion audio, réduisant ainsi la charge sur le Logitech Media Server et permettant de poursuivre la lecture du flux en cas de perte de la connexion. La diffusion par proxy permet au Logitech Media Server de gérer la connexion et de transmettre le flux audio vers la platine. La diffusion directe est l'option sélectionnée par défaut. Si vous rencontrez des problèmes lors de la lecture des flux, sélectionnez l'option de diffusion par proxy. Notez que si plusieurs platines sont synchronisées pour utiliser un flux, c'est la diffusion proxy qui est utilisée afin de réduire l'utilisation de bande passante.
+	IT	Quando si riproduce uno stream Internet si possono utilizzare due metodi. Con il metodo dello streaming diretto il riproduttore si collega direttamente al server di streaming audio. Ciò consente di ridurre leggermente il carico di Logitech Media Server e di proseguire la riproduzione dello stream anche nel caso in cui la connessione con Logitech Media Server venga persa. Con il metodo dello streaming tramite proxy la gestione della connessione viene effettuata da Logitech Media Server, il quale passa l'audio al riproduttore. Lo streaming diretto è il metodo predefinito. Se tuttavia si riscontrassero problemi con gli stream, provare a utilizzare il metodo dello streaming tramite proxy. Si noti che se due o più lettori sono sincronizzati su uno stream, viene sempre utilizzato il metodo dello streaming tramite proxy per ridurre l'utilizzo della banda.
+	NL	Het afspelen van een internetstream kan op twee manieren. Directe streaming: het muzieksysteem maakt een directe verbinding met de server die de audio streamt. Je Logitech Media Server wordt hierdoor minder belast en de stream speelt door als de verbinding tussen het muzieksysteem en de Logitech Media Server wordt verbroken. Proxystreaming: de Logitech Media Server zorgt voor de verbinding en geeft de audiostream door aan het muzieksysteem. Directe streaming is de standaard, maar als dit problemen oplevert, kun je proxystreaming proberen. Let op: Als je twee of meer muzieksystemen synchroniseert op een stream, wordt proxystreaming automatisch ingesteld om zo de gebruikte bandbreedte te minimaliseren.
+	NO	Avspilling av strømmer fra Internett kan gjøres på to måter: Hvis du bruker direktestrøm oppretter spilleren en direkte forbindelse til serveren som sender lydstrømmen. Det gir litt mindre belastning på Logitech Media Server-maskinen, og strømmen kan spilles av selv om forbindelsen til denne blir brutt. Det er også mulig å sende datastrømmen gjennom Logitech Media Server, som da opptrer som en proxy. Dette kalles proxystrømming. Direktestrømming er standard, men hvis du får problemer med strømmer, kan du prøve å endre innstillingen til proxystrømming i stedet. Merk: hvis to eller flere spillere er synkronisert med en strøm, brukes proxystrømming alltid, for å redusere båndbreddebruken.
+	PL	Podczas odtwarzania internetowego strumienia przesyłanie strumieniowe wykonywane jest na dwa sposoby. Bezpośrednie przesyłanie strumieniowe powoduje połączenie z serwerem strumieniowego przesyłania dźwięku, co nieznacznie zmniejsza obciążenie programu Logitech Media Server i umożliwia kontynuację odtwarzania strumienia, jeżeli połączenie z programem Logitech Media Server zostanie utracone. Przesyłanie strumieniowe z wykorzystaniem serwera proxy powoduje, że program Logitech Media Server obsługuje połączenie, przekazując dźwięk do odtwarzacza. Bezpośrednie przesyłanie strumieniowe to metoda domyślna, ale w przypadku problemów ze strumieniami należy zmienić ustawienie na Przesyłanie strumieniowe przez serwer proxy. Należy pamiętać, że jeżeli ze strumieniem zsynchronizowane są co najmniej dwa odtwarzacze, zawsze używane jest przesyłanie strumieniowe przez serwer proxy w celu ograniczenia użycia przepustowości.
+	RU	Поддерживается два способа потоковой передачи из Интернета. При прямой передаче плеер напрямую подключается к серверу потокового аудио, что несколько уменьшает нагрузку на Logitech Media Server и позволяет продолжать воспроизведение потока в случае разрыва подключения к Logitech Media Server. При передаче через прокси Logitech Media Server обслуживает подключение, передавая аудиоданные плееру. По умолчанию задана прямая потоковая передача, но если возникают проблемы с потоком, можно попробовать переключиться на опосредованную передачу. Помните: если два и более плееров настраиваются на один поток, всегда применяется опосредованная передача для сужения полосы пропускания.
+	SV	När du spelar upp en ström från Internet kan det ske på två olika sätt. Direktströmning innebär att spelaren ansluts direkt till servern som strömmen kommer ifrån, vilket minskar belastningen på Logitech Media Server något och gör det möjligt att fortsätta spela även om anslutningen till Logitech Media Server skulle brytas. Proxyströmmning innebär att Logitech Media Server ansluts till servern och sedan vidarebefordrar ljudet till spelaren. Direktströmning är standard. Om du har problem med strömmar kan du prova att ändra inställningen till Proxyströmning. Observera att proxyströmning alltid används när flera spelare synkroniseras för att spela upp samma ström, eftersom detta sparar bandbredd.
 
 MP3_STREAMING_DIRECT
 	CS	Přímý datový proud
@@ -5817,7 +5767,7 @@ SETUP_TRANSITIONDURATION
 	CS	Doba trvání Prolínání
 	DA	Længde af blød overgang
 	DE	Dauer der Überblendung
-	EN	Crossfade duration
+	EN	Crossfade Duration
 	ES	Duración del encadenado
 	FI	Ristihäivytyksen kesto
 	FR	Durée transition
@@ -6325,7 +6275,7 @@ SETUP_LIBRARY_NAME
 	CS	Název knihovny médií
 	DA	Navn på mediebibliotek
 	DE	Name der Medienbibliothek
-	EN	Media library name
+	EN	Media Library Name
 	ES	Nombre de biblioteca multimedia
 	FI	Mediakirjaston nimi
 	FR	Nom de la bibliothèque multimédia
@@ -7278,11 +7228,29 @@ SETUP_CHECKVERSION_0
 	SV	Sök inte automatiskt efter programuppdateringar
 	ZH_CN	不要自动检查是否有新的软件版本可供使用
 
+SETUP_CHECKVERSION_DAILY
+	DE	Täglich
+	EN	Daily
+	FR	Tous les jours
+	NL	Dagelijks
+
+SETUP_CHECKVERSION_WEEKLY
+	DE	Wöchentlich
+	EN	Weekly
+	FR	Hebdomadaire
+	NL	Wekelijks
+
+SETUP_CHECKVERSION_MONTHLY
+	DE	Monatlich
+	EN	Monthly
+	FR	Mensuel
+	NL	Maandelijks
+	
 SETUP_AUTO_DOWNLOAD
 	CS	Automatické stahování
 	DA	Hent automatisk
 	DE	Automatischer Download
-	EN	Automatic download
+	EN	Automatic Download
 	ES	Descarga automática
 	FI	Automaattinen lataaminen
 	FR	Téléchargement automatique
@@ -7338,6 +7306,10 @@ SETUP_AUTO_DOWNLOAD_1
 	RU	Автоматически загружать доступные обновления.
 	SV	Ladda ner uppdateringar automatiskt när de är tillgängliga.
 
+SETUP_CHECK_NOW
+	DE	Jetzt nach Update suchen
+	EN	Check for updates now
+	
 SETUP_SCREENSAVER
 	CS	Spořič obrazovky při přehrávání
 	DA	Pauseskærm når der spilles
@@ -7607,19 +7579,19 @@ SETUP_ADDITIONAL_PLAYLIST_BUTTONS
 	SV	Ytterligare spellisteknappar
 
 SETUP_ADDITIONAL_PLAYLIST_BUTTONS_DESC
-	CS	Některé skiny mohou volitelně zobrazovat další tlačítka pro přehrávání, například "Přehrát další" nebo "Odstranit ze seznamu skladeb".<br/><br/>Nezapomeňte prosím, že tato předvolba je uložena pouze ve vašem prohlížeči - budete muset ji nastavit ve všech prohlížečích, ve kterých ji chcete používat.
-	DA	Nogle temaer kan vise flere knapper, fx Spil næste, Fjern fra afspilningsliste.<br/><br/>Bemærk: Denne indstilling gemmes kun i browseren, så du skal indstille den i samtlige browsere hvor den skal bruges.
-	DE	Bestimmte Skins können wahlweise zusätzliche Wiedergabe-Schaltflächen (z.B. 'Nächsten wiedergeben' oder 'Aus Wiedergabeliste entfernen' enthalten.<br/><br/>Beachten Sie, dass diese Einstellung nur im aktuellen Browser gespeichert wird. Wenn Sie einen anderen Browser verwenden, müssen Sie sie dort ebenfalls ändern.
-	EN	Some skins optionally can display additional buttons for playable items, like eg. "Play next" or "Remove from playlist".<br/><br/>Please note: this preference is stored in your browser only - you'll have to set it on all browsers you want to use it.
-	ES	Algunas máscaras ofrecen la opción de mostrar botones adicionales para los elementos que se pueden reproducir, como por ejemplo "Reproducir a continuación" o "Quitar de la lista de reproducción".<br/><br/>Tenga en cuenta que: esta preferencia sólo se guarda en su navegador (deberá elegirla en todos los navegadores que vaya a utilizar).
-	FI	Jotkin olemukset voivat näyttää valinnaisesti lisäpainikkeita soitettaville kohteille, esimerkiksi Soita seuraava tai Poista soittoluettelosta.<br/><br/>Huomautus: asetus tallennetaan ainoastaan selaimeen - se täytyy määrittää erikseen kaikissa selaimissa, joita haluat käyttää.
-	FR	Certains habillages peuvent facultativement afficher des boutons supplémentaires pour les éléments lisibles tels que Lire à la suite ou Enlever de la liste de lecture.<br/><br/>Notez que cette préférence est stockée uniquement dans votre navigateur. Vous devrez la définir sur tous les navigateurs sur lesquels vous voulez l'utiliser.
-	IT	In alcune skin è possibile visualizzare pulsanti di riproduzione aggiuntivi, quali Brano successivo o Rimuovi dalla playlist.<br/><br/>Nota: poiché questa impostazione viene salvata nel browser, è necessario specificarla individualmente in ogni browser che si intende utilizzare.
-	NL	Sommige skins kunnen desgewenst extra knoppen voor afspeelbare items weergeven, zoals 'Volgende afspelen' of 'Uit playlist verwijderen'.<br/><br/>N.B. Deze voorkeursinstelling wordt alleen in je browser opgeslagen. Als je de instelling op andere browsers wilt gebruiken, moet je deze apart instellen.
-	NO	Noen maler kan vise tilleggsknapper for spillbare elementer, for eksempel Spill av neste eller Fjern fra spillelisten.<br/><br/>Merk: Denne innstillingen lagres kun i leseren, så du må konfigurere denne innstillingen i alle lesere du vil bruke den på.
-	PL	Niektóre karnacje mogą opcjonalnie zawierać dodatkowe przyciski dotyczące odtwarzalnych elementów, np. „Odtwórz następny” lub „Usuń z listy odtwarzania”.<br/><br/>Uwaga: ta opcja jest zapisana tylko w przeglądarce; wymagane jest jej skonfigurowanie w każdej przeglądarce, w której ma być używana.
-	RU	В некоторых обложках могут отображаться дополнительные кнопки для воспроизводимых элементов, например "Воспроизвести следующую" или "Удалить из плей-листа".<br/><br/>Обратите внимание: эта настройка сохраняется только в вашем браузере. Если планируется использовать ее в других браузерах, необходимо выбрать эту настройку и в них.
-	SV	Med vissa skal kan du välja att visa extra spellisteknappar, t.ex. som Spela härnäst eller Ta bort från spellista.<br/><br/>Observera att det här alternativet endast sparas i webbläsaren. Du måste alltså ställa in varje webbläsare som du vill använda separat.
+	CS	Některé skiny mohou volitelně zobrazovat další tlačítka pro přehrávání, například "Přehrát další" nebo "Odstranit ze seznamu skladeb".
+	DA	Nogle temaer kan vise flere knapper, fx Spil næste, Fjern fra afspilningsliste.
+	DE	Bestimmte Skins können wahlweise zusätzliche Wiedergabe-Schaltflächen (z.B. 'Nächsten wiedergeben' oder 'Aus Wiedergabeliste entfernen' enthalten.
+	EN	Some skins optionally can display additional buttons for playable items, like eg. "Play next" or "Remove from playlist".
+	ES	Algunas máscaras ofrecen la opción de mostrar botones adicionales para los elementos que se pueden reproducir, como por ejemplo "Reproducir a continuación" o "Quitar de la lista de reproducción".
+	FI	Jotkin olemukset voivat näyttää valinnaisesti lisäpainikkeita soitettaville kohteille, esimerkiksi Soita seuraava tai Poista soittoluettelosta.
+	FR	Certains habillages peuvent facultativement afficher des boutons supplémentaires pour les éléments lisibles tels que Lire à la suite ou Enlever de la liste de lecture.
+	IT	In alcune skin è possibile visualizzare pulsanti di riproduzione aggiuntivi, quali Brano successivo o Rimuovi dalla playlist.
+	NL	Sommige skins kunnen desgewenst extra knoppen voor afspeelbare items weergeven, zoals 'Volgende afspelen' of 'Uit playlist verwijderen'.
+	NO	Noen maler kan vise tilleggsknapper for spillbare elementer, for eksempel Spill av neste eller Fjern fra spillelisten.
+	PL	Niektóre karnacje mogą opcjonalnie zawierać dodatkowe przyciski dotyczące odtwarzalnych elementów, np. „Odtwórz następny” lub „Usuń z listy odtwarzania”.
+	RU	В некоторых обложках могут отображаться дополнительные кнопки для воспроизводимых элементов, например "Воспроизвести следующую" или "Удалить из плей-листа".
+	SV	Med vissa skal kan du välja att visa extra spellisteknappar, t.ex. som Spela härnäst eller Ta bort från spellista.
 
 SETUP_SEARCHSUBSTRING
 	CS	Hledat ve slovech
@@ -7693,10 +7665,10 @@ SETUP_NOGENREFILTER
 	CS	Filtrovat žánry na úrovni alba a stopy.
 	DA	Filtrer genrer på album- og nummernivau.
 	DE	Stilrichtungen auf Album- und Titelebene filtern
-	EN	Filter genres at the album & track level.
+	EN	Filter Genres at the Album & Track Level.
 	ES	Filtrar géneros por álbum y pista.
 	FI	Suodata genret levy- ja raitatasolla.
-	FR	Filtrer les genres au niveau des albums et des morceaux
+	FR	Portée du filtre sur les genres
 	HE	סנן סגנונות ברמת האלבום והרצועה.
 	IT	Filtra i generi musicali a livello di album e brani.
 	NL	Genres op album- en trackniveau filteren.
@@ -7710,7 +7682,7 @@ SETUP_NOGENREFILTER_1
 	CS	Zobrazit všechny stopy a alba interpreta
 	DA	Vis alle spor og album for en kunstner
 	DE	Alle Titel und Alben eines Interpreten anzeigen
-	EN	Show any tracks & albums for an artist
+	EN	Show all albums and tracks for an artist
 	ES	Mostrar cualquier pista y álbum de un artista
 	FI	Näytä artistin kappaleet ja levyt
 	FR	Afficher tous les albums et morceaux de l'artiste
@@ -7757,6 +7729,34 @@ SETUP_NOGENREFILTER_DESC
 	SV	När du bläddrar efter genre kan du filtrera så att endast låtar och album från den valda genren visas.
 	ZH_CN	您可以在当浏览音乐曲风时过滤并只显示和音乐曲风匹配的专辑和音轨。
 
+SETUP_NOROLEFILTER
+	DE	Interpreten-Rolle auf Album- und Titelebene filtern
+	EN	Filter Contributor Roles at the Album & Track Level
+	FR	Portée du filtre sur le rôle de l'artiste
+	NL	Rollen van uitvoerenden filteren op Album- en Nummerniveau
+	PL	Filtrowanie albumów i utworów według ról kontrybutorów
+
+SETUP_NOROLEFILTER_1
+	DE	Alle Titel und Alben eines Interpreten anzeigen
+	EN	Show all albums and tracks for an artist
+	FR	Afficher tous les albums et morceaux d'un artiste
+	NL	Toon alle albums en nummers van een artiest
+	PL	Pokaż wszystkie albumy i utwory dla wykonawcy
+
+SETUP_NOROLEFILTER_0
+	DE	Nur zur gewählten Rolle passende Alben und Titel anzeigen
+	EN	Only show tracks or albums matching the selected role for an artist
+	FR	Afficher uniquement les albums et les morceaux correspondant au rôle de l'artiste
+	NL	Laat alleen nummers zien die overeenkomen met de geselecteerde rol van de artiest
+	PL	Pokaż wyłącznie te albumy i utwory, które są zgodne z wybraną rolą
+
+SETUP_NOROLEFILTER_DESC
+	DE	Beim Durchsuchen von Interpreten können Alben und Titel nach der ausgewählten Rolle (ALBUMARTIST, COMPOSER etc.) gefiltert werden.
+	EN	Filtering can be done when Browsing Artists to only show the albums & tracks that match the selected role (eg. ALBUMARTIST, COMPOSER etc.).
+	FR	Le filtre permet de n'afficher que les albums ou les morceaux pour lesquels l'artiste a le rôle sélectionné (Artiste de l'Album, Compositeur, etc...)
+	NL	Bij het browsen in Artiesten kun je filteren zodat alleen de albums en nummers worden getoond van de geselecteerde rol (ALBUMARTIST, COMPOSER enz.).
+	PL	Filtrowanie może zostać włączone podczas przeglądania listy wykonawców, aby wyświetlić tylko te albumy i utwory, które są zgodne z wybraną rolą kontrybutora (np. ALBUMARTIST, COMPOSER itp.).
+
 SETUP_COMPOSERINARTISTS
 	CS	Skladatel, Skupina a Orchestr v Interpretech
 	DA	Komponist, band og orkester i Kunstnere
@@ -7770,7 +7770,7 @@ SETUP_COMPOSERINARTISTS
 	JA	「アーチスト」に、作曲家、バンド、オーケストラ
 	NL	Componist, groep en orkest in artiesten
 	NO	Komponist, band og orkester i Artister
-	PL	Kompozytor, zespół i orkiestra z wykonawcami
+	PL	Kompozytor, zespół i orkiestra jako wykonawcy
 	PT	Compositor, Banda e Orquestra em Artistas
 	RU	Поле "Исполнители": композитор, группа и оркестр
 	SV	Kompositör, band och orkester i Artister
@@ -7789,7 +7789,7 @@ SETUP_COMPOSERINARTISTS_DESC
 	JA	作曲家、バンド、オーケストラの情報は、ブラウズ・検索の時にアーチスト情報として認識させることができます。
 	NL	Je kunt informatie over componisten, groepen en orkesten in de lijst van artiesten opnemen, zodat je erin kunt bladeren en zoeken.
 	NO	Sanginformasjon om komponist, gruppe og orkester kan inkluderes i artistlisten når du blar og søker.
-	PL	W celu przeglądania i wyszukiwania do listy wykonawców można dodać informacje o kompozytorze, zespołach i orkiestrach związane z utworem.
+	PL	Wyświetlaj kompozytorów oraz nazwy zespołów i orkiestr na liście wykonawców.
 	PT	A informação relativa ao compositor, banda e orquestra poderá ser incluida na listas ou na procura.
 	RU	Информацию о композиторах, группах и оркестрах для данной песни можно включить в список исполнителей для просмотра и поиска.
 	SV	Låtinformation om kompositörer, band och orkestrar kan inkluderas i artistlistan för bläddring eller sökning.
@@ -7827,7 +7827,7 @@ SETUP_PERSISTPLAYLISTS_DESC
 	JA	サーバーソフトウェアは、最後に再生していたプレイリストを記憶しておくことができます。
 	NL	Logitech Media Server kan de laatste playlist voor 'Speelt nu' onthouden en deze laden wanneer de server start.
 	NO	Logitech Media Server kan huske siste spilleliste som var i Spilles nå når programmet starter.
-	PL	Program Logitech Media Server może wyświetlić ostanie listy odtwarzania utworów w kategorii Teraz odtwarzane po uruchomieniu aplikacji.
+	PL	Program Logitech Media Server może przywrócić poprzednią listę odtwarzania "Teraz odtwarzane" podczas uruchomienia aplikacji.
 	PT	O servidor pode manter a playlist de músicas actual quando é re-iniciado.
 	RU	Logitech Media Server может запоминать последний плей-лист песен, воспроизводившихся при запуске приложения.
 	SV	Logitech Media Server kan komma ihåg den senast spelade aktuella spellistan tills nästa gång programmet körs.
@@ -7903,7 +7903,7 @@ SETUP_RESHUFFLEONREPEAT_DESC
 	JA	サーバーソフトウェアは、リピート時に、再度ランダムをかけるよう選択することができます。
 	NL	Logitech Media Server kan de volgorde van liedjes in een geshuffelde playlist telkens nadat de lijst afgespeeld is, opnieuw veranderen.
 	NO	Logitech Media Server kan omrokkere spillelister på nytt etter hver gjennomspilling av en liste.
-	PL	Program Logitech Media Server może w razie potrzeby po każdym pełnym przejściu ponownie sortować listy posortowane losowo.
+	PL	Program Logitech Media Server może, w razie potrzeby, zmienić kolejność utworów w liście odtwarzanej losowo, każdorazowo po odtworzeniu wszystkich utworów z listy.
 	PT	O servidor pode re-misturar a lista de músicas no final dela, se necessário.
 	RU	Logitech Media Server может повторно перемешивать плей-листы после воспроизведения всех песен списка.
 	SV	Logitech Media Server kan blanda om blandade spellistor varje gång hela listan gåtts igenom.
@@ -7979,7 +7979,7 @@ SETUP_PLAYTRACKALBUM_1
 	JA	同じアルバム、またはフォルダーのその他の曲を再生する
 	NL	Andere liedjes van album/uit map afspelen
 	NO	Spill andre sanger i albumet eller katalogen
-	PL	Odtwórz inne utwory w albumie lub katalogu
+	PL	Odtwórz inne utwory z albumu lub katalogu
 	PT	Tocar outras músicas do álbum ou da mesma directoria
 	RU	Воспроизвести другие песни в альбоме или каталоге
 	SV	Spela andra låtar från albumet eller mappen
@@ -8027,7 +8027,7 @@ SETUP_IGNOREDARTICLES
 	CS	Ignorované členy při řazení
 	DA	Ord der skal ignoreres ved sortering
 	DE	Artikel, die bei der Sortierung nicht berücksichtigt werden sollen
-	EN	Articles To Ignore When Sorting
+	EN	Articles to Ignore When Sorting
 	ES	Artículos a omitir al ordenar
 	FI	Ohitettavat kohteet lajittelun aikana
 	FR	Articles à ignorer lors du tri
@@ -8089,6 +8089,42 @@ SETUP_SPLITLIST_DESC
 	RU	Logitech Media Server может извлекать из тегов музыкальных файлов имена исполнителей, названия альбомов и жанры, даже если их несколько. Если в тегах обнаружатся какие-либо из нижеперечисленных слов или символов, для каждого элемента будут созданы отдельные записи. Например, если в списке ниже поставить точку с запятой, песня с тегом исполнителя "И. С. Бах; Майкл Тилсон Томас" появится в области исполнителей и под именем "И. С. Бах", и под именем "Майкл Тилсон Томас". При изменении этой настройки будет запущено повторное сканирование медиатеки.
 	SV	Logitech Media Server har stöd för taggar med flera artistnamn, albumtitlar eller genrer för samma låt. Om ett eller flera av orden eller tecknen i taggarna hittas, så skapas självständiga poster för varje objekt. Om du t.ex. använder semikolon i listan nedan visas en låt med taggen J. S. Bach;Michael Tilson Thomas i artistområdet för både J. S. Bach och Michael Tilson Thomas. Om du ändrar den här inställningen söks musikbiblioteket igenom på nytt.
 
+SETUP_ARTISTS_BROWSE_MODES
+	CS	Procházet interprety
+	DA	Gennemse kunstnere
+	DE	Künstler durchsuchen
+	EN	Browse Artists
+	ES	Examinar artistas
+	FI	Etsi artisteja
+	FR	Parcourir les artistes
+	IT	Sfoglia artisti
+	NL	Artiesten bekijken
+	NO	Bla i artister
+	PL	Przeglądanie wykonawców
+	RU	Просмотр исполнителей
+	SV	Bläddra efter artister
+
+SETUP_ARTISTS_BROWSE_MODES_DESC
+	DE	Wählen Sie, ob Sie eine einzelne, konfigurierbare Liste von Interpreten haben wollen, oder eine für Album-Interpreten und eine für Alle Interpreten. Album-Interpreten führt nur Künstler auf, welche für ein Album alleine gespeichert sind, oder im ALBUMARTIST Tag vermerkt sind. Alle Interpreten listet alle Künstler aller Rollen auf (ARTIST, COMPOSER etc.). Die konfigurierbare Interpretenliste lässt Sie festlegen, welche Rollen berücksichtigt werden sollen.
+	EN	Choose whether you want to use a single, configurable artists list, or two lists for Album Artists and All Artists. Album Artists is a list where Album Artist is the sole artist on an album or is the artist specified in the ALBUMARTIST tag. All Artists is a list of every artist that appears in a contributor role tag (ARTIST, COMPOSER etc.). The single, configurable list of artists on the other hand let's you define which contributor roles should be part of the Artists menu.
+	FR	Choisissez si vous voulez avoir une seule liste configurable d'artistes, ou une pour l'Artistes des Albums et une autre pour tous les artistes. Artistes des Albums ne répertorie que l'artiste principal de chaque album. Tous les Artistes répertorie tous les artistes quel que soit leur rôle (ARTISTE, COMPOSITEUR etc.). La liste configurable Artistes vous permet de spécifier les rôles qui doivent être pris en compte.
+	NL	Kies of je een enkele, aan te passen lijst met artiesten wilt, of twee lijsten voor Albumartiesten en Alle Artiesten. Albumartiesten is een lijst waar de albumartiest de enige artiest op het album is, of is het de artiest die in de 'ALBUMARTIST tag' vermeld staat. Alle Artiesten is een lijst met alle artiesten die in een tag voorkomen met een uitvoerende rol (ARTIST, COMPOSER, enz.). Daarentegen kun je in de enkele, aan te passen lijst met artiesten aangeven welke uitvoerende rollen in de lijst moeten worden opgenomen.
+	PL	Wybierz, czy chcesz korzystać z jednej, konfigurowalnej listy wykonawców, czy z dwóch list: "Wykonawcy albumów" oraz "Wszyscy wykonawcy". Na liście "Wykonawcy albumów" pojawią się wyłącznie solowi wykonawcy albumów, bądź wykonawcy podani w znaczniku ALBUMARTIST. Na liście "Wszyscy wykonawcy" pojawią się wszyscy artyści podani w znacznikach określających role kontrybutorów (ARTIST, COMPOSER itp.). Z kolei pojedyncza, konfigurowalna lista wykonawców pozwala na określenie, które role kontrybutorów powinny być w niej zawarte.
+
+SETUP_ARTISTS_BROWSE_MODES_UNIFIED_ON
+	DE	Eine konfigurierbare Liste mit Künstlern verwenden
+	EN	Use single, configurable list of artists
+	FR	Utilisation d'une seule liste configurable d'artistes
+	NL	Gebruik een aan te passen lijst met artiesten
+	PL	Jedna, konfigurowalna lista wykonawców
+
+SETUP_ARTISTS_BROWSE_MODES_UNIFIED_OFF
+	DE	Verwende getrennte Listen für Album-Interpreten und Alle Künstler
+	EN	Use two separate lists for Album Artists and All Artists
+	FR	Utilisation de listes distinctes Artistes des Albums et tous les Artistes
+	NL	Gebruik aparte lijsten voor Albumartiesten en Alle Artiesten
+	PL	Dwie osobne listy: "Wykonawcy albumów" oraz "Wszyscy wykonawcy"
+
 SETUP_BROWSEAGELIMIT
 	CS	Omezení nové hudby
 	DA	Grænse for ny musik
@@ -8121,6 +8157,41 @@ SETUP_BROWSEAGELIMIT_DESC
 	PL	Wybierz liczbę najnowszych albumów podczas wyszukiwania nowej muzyki. Wartość domyślna wynosi 100.
 	RU	Выберите число последних альбомов, отображаемых при просмотре новой музыки. По умолчанию — 100
 	SV	Välj antalet nya album som ska visas när du söker efter ny musik. Standard är 100.
+
+SETUP_SCAN_ON_PREF_CHANGE
+	DE	Bei Einstellungesänderungen Sammlung durchsuchen
+	EN	Trigger Scan on Preference Changes
+	FR	Lancer l'analyse après modification des préférences
+	NL	Start scan bij voorkeurswijzigingen
+	PL	Uruchom przeszukiwanie biblioteki po zmianie ustawień
+	
+SETUP_SCAN_ON_PREF_CHANGE_DESC
+	DE	Einige Einstellungen erfordern ein erneutes Einlesen der Mediensammlung. Dieser Scan kann automatisch ausgelöst werden. Allerdings kann dies zur Folge haben, dass mehrere Durchsuchen-Läufe hintereinander gestartet werden, falls mehrere Einstellungen geändert werden.
+	EN	Some preferences need a full wipe & rescan of your media library to take effect. This scan can be triggered automatically if you wish. But it could cause multiple scans to be queued up if you change several preferences at once.
+	FR	Certains changements ont besoin d'effacer la bibliothèque et de tout analyser pour prendre effet. Cette opération peut être déclenchée automatiquement si vous le souhaitez. Attention, si vous modifiez plusieurs préférences à la suite, autant d'analyses vont être enchainées.
+	NL	Sommige voorkeuren vragen om het volledig wissen van je muziekcollectie en een herscan. Deze scan kan automatisch worden gestart als je dat wilt. Maar het tegelijkertijd aanpassen van verschillende voorkeuren kan leiden tot meerdere scans die in een wachtrij worden geplaatst.
+	PL	Niektóre ustawienia wymagają ponownego przeszukania całej Twojej biblioteki multimedialnej do poprawnego działania. Ten proces może być uruchamiany automatycznie, lecz może spowodować zakolejkowanie wielokrotnego przeszukiwania biblioteki w przypadku zmiany kilku ustawień naraz.
+
+SETUP_SCAN_ON_PREF_CHANGE_ON
+	DE	Durchsuchen automatisch starten
+	EN	Trigger scan automatically
+	FR	Relancer automatiquement l'analyse
+	NL	Start scan automatisch
+	PL	Automatycznie uruchom przeszukiwanie
+
+SETUP_SCAN_ON_PREF_CHANGE_OFF
+	DE	Zum Durchsuchen auffordern, aber nicht automatisch starten
+	EN	Prompt to scan, but don't trigger it automatically
+	FR	Demander avant de lancer l'analyse
+	NL	Vraag om te scannen, maar start het niet automatisch
+	PL	Spytaj się, czy uruchomić przeszukiwanie
+
+SETUP_SCAN_ON_PREF_CHANGE_PROMPT
+	DE	Einige Einstellungsänderungen erfordern ein erneutes Durchsuchen ihrer Mediensammlung. <a href="%s">Klicken Sie hier, um die Sammlung neu zu durchsuchen.</a>
+	EN	Some settings require a rescan of your library to take effect. <a href="%s">Click here to start the scan.</a>
+	FR	Certains paramètrages nécessitent de relancer une analyse complète de la bibliothèque. <a href="%s">Cliquez ici pour lancer l'analyse.</a>
+	NL	Sommige voorkeurswijzigingen vragen om een herscan van je collectie voordat ze effect hebben. <a href="%s">Klik hier om de scan te starten.</a>
+	PL	Niektóre ustawienia wymagają ponownego przeszukania biblioteki multimedialnej. <a href="%s">Kliknij tutaj, aby uruchomić przeszukiwanie.</a>
 
 SETUP_DBHIGHMEM
 	CS	Konfigurovat paměť databáze
@@ -8163,7 +8234,7 @@ SETUP_DBHIGHMEM_NORMAL
 	IT	Normale
 	NL	Normaal
 	NO	Normal
-	PL	Zwykły
+	PL	Normalna
 	RU	Обычный
 	SV	Normal
 
@@ -8178,9 +8249,16 @@ SETUP_DBHIGHMEM_HIGH
 	IT	Alta (opzione consigliata per computer con almeno 1 GB di RAM)
 	NL	Hoog (aanbevolen voor computers met 1+ GB RAM)
 	NO	Høy (anbefales for maskiner med 1 GB RAM eller mer)
-	PL	Wysoka (zalecana do komputerów mających ponad 1 GB pamięci RAM)
+	PL	Wysoka (zalecana dla komputerów wyposażonych w co najmniej 1 GB RAM)
 	RU	Высокое (рекомендовано для компьютеров с объемом ОЗУ не менее 1 Гб)
 	SV	Hög (rekommenderas för datorer med mer än 1 GB RAM)
+
+SETUP_DBHIGHMEM_MAX
+	DE	Maximum (empfohlen für Sammlungen mit mehr als 50'000 Titeln und Computer mit 2 GB RAM und mehr)
+	EN	Maximum (recommended for libraries with more than 50,000 tracks and machines with 2+ GB RAM)
+	FR	Maximum (recommandé pour les bibliothèques de plus de 50 000 titres et les systèmes avec au moins 2 Go de RAM)
+	NL	Maximaal (aanbevolen voor collecties met meer dan 50.000 nummers en een systeem met 2+ GB RAM)
+	PL	Maksymalna (zalecana dla bibliotek zawierających ponad 50.000 utworów i komputerów wyposażonych w co najmniej 2 GB RAM)
 
 SETUP_DISABLESTATISTICS
 	CS	Statistika knihovny
@@ -9191,7 +9269,7 @@ SETUP_SN_NEED_ACCOUNT
 	IT	Crea un nuovo account mysqueezebox.com
 	NL	Ik moet een mysqueezebox.com-account maken
 	NO	Jeg må opprette en mysqueezebox.com-konto
-	PL	Musze utworzyć konto usługi mysqueezebox.com
+	PL	Muszę utworzyć konto usługi mysqueezebox.com
 	RU	Мне нужно создать учетную запись mysqueezebox.com
 	SV	Jag behöver ett mysqueezebox.com-konto
 
@@ -9316,19 +9394,19 @@ SETUP_SN_REPORT_STATS_DISABLE
 	SV	Nej, rapportera inte statistik.
 
 SETUP_NO_JAVASCRIPT
-	CS	Před přístupem ke Logitech Media Server se prosím ujistěte, že používáte poslední prohlížeč (Firefox&reg;, Apple Safari&reg;, Microsoft&reg; Internet Explorer 7+, Opera 9 nebo vyšší), a že je na vašem prohlížeči povolen JavaScript. Alternativně můžete používat jednodušší skin, např.<a href="/Classic/?skipWizard=1">Klasický</a>.
-	DA	Du skal bruge en forholdsvis ny browser for at få adgang til Logitech Media Server (Firefox&reg;, Apple Safari&reg;, Microsoft&reg; Internet Explorer 6, Opera 9 eller senere), og JavaScript skal være aktiveret i browseren. Alternativt kan du benytte et enklere layout, fx <a href="/Classic/?skipWizard=1">Klassisk</a>.
-	DE	Für den Zugriff auf Logitech Media Server benötigen Sie eine aktuelle Version eines Browsers (Firefox&reg;, Apple Safari&reg;, Microsoft&reg; Internet Explorer 7 +, Opera 9 oder höher). Außerdem muss im Browser JavaScript aktiviert sein. Sie können auch eine einfachere Benutzeroberfläche wie <a href="/Classic/?skipWizard=1">Classic</a> wählen.
-	EN	In order to access Logitech Media Server, please make sure you are using a recent browser (Firefox&reg;, Apple Safari&reg;, Microsoft&reg; Internet Explorer 7+, Opera 9 or later), and JavaScript is enabled in your browser. Alternatively you can use a simpler skin, such as <a href="/Classic/?skipWizard=1">Classic</a>.
-	ES	Para acceder a Logitech Media Server, debe utilizar un navegador reciente (Firefox&reg;, Apple Safari&reg;, Microsoft&reg; Internet Explorer 7 o posterior, Opera 9 o posterior) con la opción JavaScript activada. O puede utilizar una máscara más simple, por ejemplo una <a href="/Classic/?skipWizard=1">Classic</a>.
-	FI	Logitech Media Serverin käyttö edellyttää, että käytät uutta selainta (Firefox&reg;, Apple Safari&reg;, Microsoft&reg; Internet Explorer 7+, Opera 9 ja uudemmat). Lisäksi JavaScriptin on oltava käytössä selaimessa. Vaihtoehtoisesti voit käyttää yksinkertaisempaa olemusta, kuten esimerkiksi vaihtoehtoa <a href="/Classic/?skipWizard=1">Classic</a>.
-	FR	Pour accéder au Logitech Media Server, utilisez un navigateur récent (Firefox&reg;, Apple Safari&reg;, Microsoft&reg; Internet Explorer 7+, Opera 9 ou version ultérieure) et activez JavaScript pour ce navigateur. Vous pouvez également utiliser une apparence d'interface plus légère, telle que <a href="/Classic/?skipWizard=1">Classic</a>.
-	IT	Per accedere a Logitech Media Server, assicurarsi di utilizzare un browser recente (Firefox&reg;, Apple Safari&reg;, Microsoft&reg; Internet Explorer 7 o versioni successive, Opera 9 o versioni successive) e di attivare JavaScript all'interno del browser. In alternativa è possibile utilizzare una skin quale <a href="/Classic/?skipWizard=1">Classic</a>.
-	NL	Je moet een recente browser gebruiken (Firefox&reg;, Apple Safari&reg;, Microsoft&reg; Internet Explorer 7+, Opera 9 of later) en JavaScript in je browser inschakelen om Logitech Media Server te kunnen oproepen. Je kunt ook een eenvoudigere skin gebruiken, zoals <a href="/Classic/?skipWizard=1">Classic</a>.
-	NO	Du må bruke en oppdatert versjon av nettleseren (Firefox&reg;, Apple Safari&reg;, Microsoft&reg; Internet Explorer 6, Opera 9 eller nyere) samt ha JavaScript aktivert i nettleseren for å komme inn på Logitech Media Server. Du kan eventuelt bruke et enklere grensesnitt, som <a href="/Classic/?skipWizard=1">Classic</a>.
-	PL	Aby uzyskać dostęp do programu Logitech Media Server, sprawdź czy korzystasz z najnowszej przeglądarki (Firefox&reg;, Apple Safari&reg;, Microsoft&reg; Internet Explorer 6, Opera 9 lub nowszej), a obsługa skryptów JavaScript w przeglądarce jest włączona. Można także użyć prostej karnacji, takiej jak <a href="/Classic/?skipWizard=1">Klasyczna</a>.
-	RU	Для доступа к Logitech Media Server необходим современный обозреватель (Firefox&reg;, Apple Safari&reg;, Microsoft&reg; Internet Explorer 7+, Opera 9 или более поздние версии), в котором включен JavaScript. Либо можно использовать упрощенную оболочку, например <a href="/Classic/?skipWizard=1">Classic</a>.
-	SV	Använd en aktuell webbläsare (Firefox&reg;, Apple Safari&reg;, Microsoft&reg; Internet Explorer 6, Opera 9 eller senare) och kontrollera att JavaScript är aktiverat i webbläsaren för att få tillgång till Logitech Media Server. Alternativt kan du använda ett enklare skal, t.ex. <a href="/Classic/?skipWizard=1">Classic</a>.
+	CS	Před přístupem ke Logitech Media Server se prosím ujistěte, že používáte poslední prohlížeč (Firefox&reg;, Apple Safari&reg;, Microsoft&reg; Internet Explorer 10, Opera 25 nebo vyšší), a že je na vašem prohlížeči povolen JavaScript. Alternativně můžete používat jednodušší skin, např.<a href="/Classic/?skipWizard=1">Klasický</a>.
+	DA	Du skal bruge en forholdsvis ny browser for at få adgang til Logitech Media Server (Firefox&reg;, Apple Safari&reg;, Microsoft&reg; Internet Explorer 10+, Opera 25 eller senere), og JavaScript skal være aktiveret i browseren. Alternativt kan du benytte et enklere layout, fx <a href="/Classic/?skipWizard=1">Klassisk</a>.
+	DE	Für den Zugriff auf Logitech Media Server benötigen Sie eine aktuelle Version eines Browsers (Firefox&reg;, Apple Safari&reg;, Microsoft&reg; Internet Explorer 10, Opera 25 oder höher). Außerdem muss im Browser JavaScript aktiviert sein. Sie können auch eine einfachere Benutzeroberfläche wie <a href="/Classic/?skipWizard=1">Classic</a> wählen.
+	EN	In order to access Logitech Media Server, please make sure you are using a recent browser (Firefox&reg;, Apple Safari&reg;, Microsoft&reg; Internet Explorer 10, Opera 25 or later), and JavaScript is enabled in your browser. Alternatively you can use a simpler skin, such as <a href="/Classic/?skipWizard=1">Classic</a>.
+	ES	Para acceder a Logitech Media Server, debe utilizar un navegador reciente (Firefox&reg;, Apple Safari&reg;, Microsoft&reg; Internet Explorer 10 o posterior, Opera 25 o posterior) con la opción JavaScript activada. O puede utilizar una máscara más simple, por ejemplo una <a href="/Classic/?skipWizard=1">Classic</a>.
+	FI	Logitech Media Serverin käyttö edellyttää, että käytät uutta selainta (Firefox&reg;, Apple Safari&reg;, Microsoft&reg; Internet Explorer 10+, Opera 25 ja uudemmat). Lisäksi JavaScriptin on oltava käytössä selaimessa. Vaihtoehtoisesti voit käyttää yksinkertaisempaa olemusta, kuten esimerkiksi vaihtoehtoa <a href="/Classic/?skipWizard=1">Classic</a>.
+	FR	Pour accéder au Logitech Media Server, utilisez un navigateur récent (Firefox&reg;, Apple Safari&reg;, Microsoft&reg; Internet Explorer 10+, Opera 25 ou version ultérieure) et activez JavaScript pour ce navigateur. Vous pouvez également utiliser une apparence d'interface plus légère, telle que <a href="/Classic/?skipWizard=1">Classic</a>.
+	IT	Per accedere a Logitech Media Server, assicurarsi di utilizzare un browser recente (Firefox&reg;, Apple Safari&reg;, Microsoft&reg; Internet Explorer 10 o versioni successive, Opera 25 o versioni successive) e di attivare JavaScript all'interno del browser. In alternativa è possibile utilizzare una skin quale <a href="/Classic/?skipWizard=1">Classic</a>.
+	NL	Je moet een recente browser gebruiken (Firefox&reg;, Apple Safari&reg;, Microsoft&reg; Internet Explorer 10+, Opera 25 of later) en JavaScript in je browser inschakelen om Logitech Media Server te kunnen oproepen. Je kunt ook een eenvoudigere skin gebruiken, zoals <a href="/Classic/?skipWizard=1">Classic</a>.
+	NO	Du må bruke en oppdatert versjon av nettleseren (Firefox&reg;, Apple Safari&reg;, Microsoft&reg; Internet Explorer 10, Opera 25 eller nyere) samt ha JavaScript aktivert i nettleseren for å komme inn på Logitech Media Server. Du kan eventuelt bruke et enklere grensesnitt, som <a href="/Classic/?skipWizard=1">Classic</a>.
+	PL	Aby uzyskać dostęp do programu Logitech Media Server, sprawdź czy korzystasz z najnowszej przeglądarki (Firefox&reg;, Apple Safari&reg;, Microsoft&reg; Internet Explorer 10, Opera 25 lub nowszej), a obsługa skryptów JavaScript w przeglądarce jest włączona. Można także użyć prostej karnacji, takiej jak <a href="/Classic/?skipWizard=1">Klasyczna</a>.
+	RU	Для доступа к Logitech Media Server необходим современный обозреватель (Firefox&reg;, Apple Safari&reg;, Microsoft&reg; Internet Explorer 10+, Opera 25 или более поздние версии), в котором включен JavaScript. Либо можно использовать упрощенную оболочку, например <a href="/Classic/?skipWizard=1">Classic</a>.
+	SV	Använd en aktuell webbläsare (Firefox&reg;, Apple Safari&reg;, Microsoft&reg; Internet Explorer 10, Opera 25 eller senare) och kontrollera att JavaScript är aktiverat i webbläsaren för att få tillgång till Logitech Media Server. Alternativt kan du använda ett enklare skal, t.ex. <a href="/Classic/?skipWizard=1">Classic</a>.
 
 SETUP_WIZARD_SQN_PLEASE
 	CS	Přihlašte se svojí emailovou adresou mysqueezebox.com a heslem a pokračujte .
@@ -9536,7 +9614,7 @@ SETUP_WIZARD_PREVIOUS
 	IT	Indietro
 	NL	Vorige
 	NO	Forrige
-	PL	Poprzedni
+	PL	Wróć
 	RU	Предыдущий
 	SV	Föregående
 
@@ -9812,7 +9890,7 @@ REMOVE_THIS_SONG_FROM_PLAYLIST
 	HE	הסרת השיר מרשימת ההשמעה
 	IT	Rimuovi questo brano dalla playlist
 	JA	この曲をプレイリストから削除する
-	NL	Dit liedje uit de playlist verwijderen
+	NL	Dit nummer uit de playlist verwijderen
 	NO	Fjern denne sangen fra spillelisten
 	PL	Usuń ten utwór z listy odtwarzania
 	PT	Remover esta Música da Playlist
@@ -9831,7 +9909,7 @@ ADD_THIS_SONG_TO_PLAYLIST
 	HE	הוסף שיר זה לרשימת ההשמעה
 	IT	Aggiungi questo brano
 	JA	この曲をプレイリストに加える
-	NL	Dit liedje toevoegen
+	NL	Dit nummer toevoegen
 	NO	Legg til denne sangen
 	PL	Dodaj ten utwór
 	PT	Adicionar esta Música à Playlist
@@ -10023,7 +10101,7 @@ ON
 	JA	オン
 	NL	aan
 	NO	på
-	PL	na
+	PL	wł.
 	PT	sim
 	RU	Вкл.
 	SV	på
@@ -10184,7 +10262,7 @@ SHUFFLE_ON_SONGS
 	HE	סידור אקראי לפי שיר
 	IT	Riproduzione casuale per brano
 	JA	トラックをランダムにする
-	NL	Willekeurige afspelen op liedje
+	NL	Willekeurige afspelen op nummer
 	NO	Tilfeldige spor
 	PL	Losowo według utworu
 	PT	Misturar Playlist por Música
@@ -10416,7 +10494,7 @@ VOLUME_SOFTER
 	JA	ソフト
 	NL	Zachter
 	NO	Lavere
-	PL	Słabiej
+	PL	Ciszej
 	PT	Reduzir
 	RU	Тише
 	SV	Lägre
@@ -10593,7 +10671,7 @@ LARGE
 	JA	大
 	NL	Groot
 	NO	Stor
-	PL	Duże
+	PL	Duży
 	PT	Grande
 	RU	Крупный
 	SV	Stor
@@ -10612,7 +10690,7 @@ SMALL
 	JA	小
 	NL	Klein
 	NO	Liten
-	PL	Małe
+	PL	Mały
 	PT	Pequeno
 	RU	Маленький
 	SV	Liten
@@ -10631,7 +10709,7 @@ MEDIUM
 	JA	中
 	NL	Gemiddeld
 	NO	Middels
-	PL	Średnie
+	PL	Średni
 	RU	Средний
 	SV	Medel
 	ZH_CN	中
@@ -10649,7 +10727,7 @@ HUGE
 	JA	特大
 	NL	Enorm
 	NO	Enorm
-	PL	Duże
+	PL	Bardzo duży
 	RU	Очень большой
 	SV	Enorm
 	ZH_CN	特大
@@ -10730,7 +10808,7 @@ FULL
 	IT	Spesso
 	NL	Vol
 	NO	Fullt
-	PL	Pełne
+	PL	Pełny
 	RU	Полный
 	SV	Full
 
@@ -10779,7 +10857,7 @@ STANDARD
 	IT	Standard
 	NL	Standaard
 	NO	Standard
-	PL	Standardowe
+	PL	Domyślny
 	RU	Стандартный
 	SV	Standard
 
@@ -10809,6 +10887,7 @@ TITLEFORMAT_DBL
 	FR	Format titres
 	JA	タイトルフォーマット
 	NO	Tittelformat
+	PL	Format tytułu utworu
 	SV	Titelformat
 	ZH_CN	标题格式
 
@@ -10864,6 +10943,25 @@ SAVE
 	NL	Opslaan
 	NO	Lagre
 	PL	Zapisz
+	PT	Gravar
+	RU	Сохранить
+	SV	Spara
+	ZH_CN	保存
+
+SAVE_AS
+	CS	Uložit
+	DA	Gem
+	DE	Speichern unter
+	EN	Save as
+	ES	Guardar
+	FI	Tallenna
+	FR	Enregistrer
+	HE	שמור
+	IT	Salva
+	JA	保存
+	NL	Opslaan
+	NO	Lagre
+	PL	Zapisz jako
 	PT	Gravar
 	RU	Сохранить
 	SV	Spara
@@ -10931,6 +11029,7 @@ SAVED_PLAYLISTS_DBL
 	FR	Listes de lecture
 	JA	保存されたプレイリスト
 	NO	Spillelister
+	PL	Listy odtwarzania
 	SV	Låtlistor
 	ZH_CN	保存播放表
 
@@ -11002,7 +11101,7 @@ SAVED_THIS_PLAYLIST_AS
 	IT	Playlist salvata come:\n\n%s
 	NL	Deze playlist opslaan als:\n\n%s
 	NO	Lagret denne spillelisten som:\n\n%s
-	PL	Zapisz tę listę odtwarzania jako:\n\n%s
+	PL	Zapisano tę listę odtwarzania jako:\n\n%s
 	RU	Сохранить этот плей-лист как:\n\n%s
 	SV	Spellistan sparad som: \n\n%s
 
@@ -11177,7 +11276,7 @@ SONGTITLE
 	HE	שם השיר
 	IT	Titolo brano
 	JA	曲タイトル
-	NL	Titel van liedje
+	NL	Titel van nummer
 	NO	Sangtittel
 	PL	Tytuł utworu
 	PT	Música
@@ -11711,7 +11810,7 @@ UNK
 	JA	不明
 	NL	Onbekend
 	NO	Ukjent
-	PL	Nieznane
+	PL	Nieznany
 	PT	Desconhecido
 	RU	Неизвестный
 	SV	Okänt
@@ -11798,6 +11897,28 @@ OGG
 	RU	Ogg Vorbis
 	SV	Ogg Vorbis
 
+OGF
+	CS	Ogg FLAC
+	DA	Ogg FLAC
+	DE	Ogg FLAC
+	EN	Ogg FLAC
+	ES	Ogg FLAC
+	FI	Ogg FLAC
+	FR	Ogg FLAC
+	HE	Ogg FLAC
+	IT	Ogg FLAC
+	NL	Ogg FLAC
+	NO	Ogg FLAC
+	PL	Ogg FLAC
+	RU	Ogg FLAC
+	SV	Ogg FLAC
+ 
+DFF
+	EN	DFF
+
+DSF
+	EN	DSF
+
 MODIFIED
 	CS	Upraveno
 	DA	Ændret
@@ -11811,7 +11932,7 @@ MODIFIED
 	JA	変更された
 	NL	Gewijzigd
 	NO	Endret
-	PL	Zmodyfikowane
+	PL	Zmodyfikowany
 	RU	Изменено
 	SV	Ändrat
 	ZH_CN	已更改
@@ -11884,7 +12005,7 @@ FILELENGTH
 	JA	ファイルの長さ
 	NL	Bestandslengte
 	NO	Fillengde
-	PL	Długość pliku
+	PL	Rozmiar pliku
 	PT	Tamanho Ficheiro
 	RU	Длина файла
 	SV	Fillängd
@@ -12121,7 +12242,7 @@ DRM
 	JA	このファイルはDigital Rights Managementによりロックされています
 	NL	Dit bestand is geblokkeerd door Digital Rights Management
 	NO	Denne filen er stengt med digital rettighetsadministrasjon
-	PL	Plik jest zablokowany przez mechanizm Zarządzanie prawami cyfrowymi
+	PL	Plik jest zablokowany przez mechanizm zarządzania prawami cyfrowymi (DRM)
 	RU	Этот файл заблокирован управлением цифровыми правами
 	SV	Den här filen är DRM-spärrad (Digital Rights Management).
 	ZH_CN	此文件经由数码版权管理锁定
@@ -12671,7 +12792,7 @@ SONG
 	HE	שיר
 	IT	Brano
 	JA	曲
-	NL	Liedje
+	NL	Nummer
 	NO	Sang
 	PL	Utwór
 	PT	Música
@@ -12814,6 +12935,7 @@ BROWSE_BY_GENRE
 BROWSE_BY_GENRE_DBL
 	DA	Genre
 	FR	Genres
+	PL	Gatunki
 
 BROWSE_BY_ARTIST
 	CS	Interpreti
@@ -12848,6 +12970,55 @@ BROWSE_ARTISTS
 	PL	Przeglądaj wykonawców
 	RU	Просмотр исполнителей
 	SV	Bläddra efter artister
+
+BROWSE_BY_ALL_ARTISTS
+	CS	Všichni interpreti
+	DA	Alle kunstnere
+	DE	Alle Interpreten
+	EN	All Artists
+	ES	Todos los artistas
+	FI	Kaikki artistit
+	FR	Tous les Artistes
+	HE	כל המבצעים
+	IT	Tutti gli artisti
+	JA	全てのアーチスト
+	NL	Alle artiesten
+	NO	Alle artister
+	PL	Wszyscy wykonawcy
+	RU	Все исполнители
+	SV	Alla artister
+	ZH_CN	所有艺人
+
+BROWSE_BY_ALBUMARTIST
+	CS	Interprets alba
+	DA	Albumkunstnere
+	DE	Album-Interpreten
+	EN	Album Artists
+	ES	Artistas de álbum
+	FI	Levyartisti
+	FR	Artistes des Albums
+	HE	מבצע האלבום
+	IT	Artistas album
+	NL	Albumartiesten
+	NO	Albumartister
+	PL	Wykonawcy albumów
+	RU	Исполнитель альбома
+	SV	Albumartister
+
+BROWSE_ALBUMARTISTS
+	CS	Procházet interprets alba
+	DA	Gennemse albumkunstnere
+	DE	Album-Interpreten durchsuchen
+	EN	Browse Album Artists
+	ES	Examinar artistas de álbum
+	FI	Hae levyartisti
+	FR	Parcourir les Artistes des Albums
+	IT	Sfoglia artistas album
+	NL	Albumartiesten bekijken
+	NO	Bla i albumartister
+	PL	Przeglądaj wykonawców albumów
+	RU	Просмотр Исполнитель альбома
+	SV	Bläddra efter albumartister
 
 BROWSE_ALBUMS
 	CS	Procházet alba
@@ -12898,6 +13069,7 @@ BROWSE_BY_ARTIST_DBL
 	DA	Gennemse kunstnere
 	ES	Examinar por Artista
 	FR	Artistes
+	PL	Wykonawcy
 
 BROWSE_BY_ALBUM
 	CS	alba
@@ -12922,6 +13094,7 @@ BROWSE_BY_ALBUM_DBL
 	DA	Gennemse albums
 	ES	Examinar por Álbum
 	FR	Albums
+	PL	Albumy
 
 BROWSE_BY_ARTWORK
 	CS	Obal alba
@@ -12936,7 +13109,7 @@ BROWSE_BY_ARTWORK
 	JA	アートワークをブラウズする
 	NL	Hoesafbeeldingen
 	NO	Albumomslag
-	PL	Okładka
+	PL	Okładki
 	RU	Обложка
 	SV	Albumomslag
 	ZH_CN	浏览图象
@@ -12944,6 +13117,7 @@ BROWSE_BY_ARTWORK
 BROWSE_BY_ARTWORK_DBL
 	ES	Examinar por Arte de Tapa
 	FR	Pochettes
+	PL	Okładka
 
 BROWSE_NEW_MUSIC
 	CS	Nová hudba
@@ -12984,6 +13158,7 @@ BROWSE_BY_SONG
 BROWSE_BY_SONG_DBL
 	ES	Examinar por canción
 	FR	Morceaux
+	PL	Utwory
 
 BROWSE_BY_YEAR
 	CS	Roky
@@ -13077,7 +13252,7 @@ BROWSE_MUSIC_FOLDER_WHILE_SCANNING
 	IT	La cartella Musica non è disponibile durante l’analisi.
 	NL	Muziekmap is niet beschikbaar tijdens het scannen.
 	NO	Musikkmappen er ikke tilgjengelig når søk pågår.
-	PL	Folder muzyczny nie jest dostępny do przeskanowania.
+	PL	Folder muzyczny nie jest dostępny, gdy trwa przeszukiwanie.
 	RU	Во время сканирования папка "Музыка" недоступна.
 	SV	Musikmappen är inte tillgänglig under sökning.
 
@@ -13179,7 +13354,7 @@ NEXT
 	JA	次
 	NL	Volgende
 	NO	Neste
-	PL	Dalej
+	PL	Następny
 	PT	Seguinte
 	RU	Следующий
 	SV	Nästa
@@ -13255,7 +13430,7 @@ LAST
 	JA	最後
 	NL	Laatste
 	NO	Siste
-	PL	Ostanie
+	PL	Ostatni
 	PT	Última
 	RU	Последний
 	SV	Sist
@@ -13279,6 +13454,13 @@ MOSTPLAYED
 	RU	Популярные песни
 	SV	Mest spelade låtar
 	ZH_CN	最常播的歌曲
+
+PLAYCOUNT
+	DE	Anzahl Wiedergaben
+	EN	Play Count
+	FR	Nombre de fois joué
+	NL	Aantal keren afgespeeld
+	PL	Ilość odtworzeń
 
 ALBUM_INFO
 	CS	Info o Albu
@@ -13351,7 +13533,7 @@ SONG_INFO
 	HE	פרטי השיר
 	IT	Informazioni sul brano
 	JA	曲の情報
-	NL	Informatie over liedje
+	NL	Informatie over nummer
 	NO	Sanginfo
 	PL	Informacje o utworze
 	PT	Informação da Música
@@ -13957,6 +14139,13 @@ DEBUG_NETWORK_SQUEEZENETWORK
 	RU	Ведение журнала mysqueesebox.com
 	SV	mysqueezebox.com-loggning
 
+DEBUG_NETWORK_REPOSITORIES
+	DE	Download Verzeichnisse für Erweiterungen, Aktualisierungen etc.
+	EN	Download repositories for extensions, update etc.
+	FR	Télécharger les répertoires pour les extensions, mises à jour, etc.
+	NL	Download opslag-URL's voor extensies, updates enz.
+	PL	Pobierz repozytoria dla dodatków, aktualizacji itp.
+
 DEBUG_PLAYER_JIVE
 	CS	Podpora pro zařízení založené na Squeezplay
 	DA	Hjælp til Squeezplay-baserede enheder
@@ -13968,7 +14157,7 @@ DEBUG_PLAYER_JIVE
 	IT	Supporto per i dispositivi basati su Squeezeplay
 	NL	Ondersteuning voor Squeezplay-apparaten
 	NO	Støtte for Squeezplay-komponenter
-	PL	Obsługa urządzeń opartych na oprogramowaniu Squeezplay
+	PL	Obsługa urządzeń opartych na oprogramowaniu Squeezeplay
 	RU	Поддержка устройств на основе Squeezplay
 	SV	Stöd för Squeezeplay-baserade enheter
 
@@ -14336,7 +14525,7 @@ CHOOSE_PLAYING_DISPLAY_MODE
 	HE	הנגן יכול להציג מידע אודות התקדמות השיר במהלך ההשמעה. בחר את המידע שברצונך להציג.
 	IT	Nel lettore è possibile visualizzare informazioni relative all'avanzamento del brano in corso. Scegliere le informazioni da visualizzare.
 	JA	プレーヤーは、曲の進み具合を表示することができます。表示したい情報を選んでください。
-	NL	Het muzieksysteem kan informatie over de voortgang van een liedje weergeven, terwijl het afgespeeld wordt. Kies de informatie die weergegeven moet worden.
+	NL	Het muzieksysteem kan informatie over de voortgang van een nummer weergeven, terwijl het afgespeeld wordt. Kies de informatie die weergegeven moet worden.
 	NO	Spilleren kan vise hvor mye av sangen som er spilt av under avspillingen. Velg hvilken informasjon du vil se.
 	PL	Odtwarzacz może wyświetlić informacje o postępie odtwarzania utworu. Wybierz informacje, które chcesz wyświetlić.
 	PT	O cliente pode mostrar informações da música actual a tocar. Escolha a informação a mostrar.
@@ -15140,7 +15329,7 @@ MUTED
 	JA	ミュート
 	NL	Gedempt
 	NO	Stille
-	PL	Bez dźwięku
+	PL	Wyciszony
 	PT	Silencioso
 	RU	Без звука
 	SV	Inget ljud
@@ -15177,7 +15366,7 @@ LCMUTED
 	JA	ミュート
 	NL	gedempt
 	NO	stille
-	PL	Bez dźwięku
+	PL	wyciszony
 	PT	silencioso
 	RU	Без звука
 	SV	ljud av
@@ -15214,7 +15403,7 @@ EXAMPLE_SHORT
 	IT	es:
 	NL	bijv.
 	NO	eksempel:
-	PL	np.:
+	PL	np.
 	RU	пр:
 	SV	ex:
 
@@ -15325,6 +15514,20 @@ SEARCHFOR
 	SV	Sök efter
 	ZH_CN	搜查
 
+TEXTSEARCH
+	DE	Textsuche
+	EN	text search
+	FR	Recherche de texte
+	NL	tekst zoeken
+	PL	zawiera
+
+NOT_IN_TEXTSEARCH
+	DE	nicht in Textsuche
+	EN	not in text search
+	FR	pas dans la recherche de texte
+	NL	niet in zoekopdracht
+	PL	nie zawiera
+
 SEARCHFOR_ARTIST
 	CS	Hledat interpreta
 	DA	Søg efter kunstner
@@ -15366,6 +15569,7 @@ SEARCHFOR_ARTISTS
 SEARCHFOR_ARTISTS_DBL
 	ES	Buscar artistas
 	FR	Cherche artistes
+	PL	Wyszukaj wykonawców
 
 SEARCHFOR_ALBUM
 	CS	Hledat album
@@ -15408,6 +15612,7 @@ SEARCHFOR_ALBUMS
 SEARCHFOR_ALBUMS_DBL
 	ES	Buscar álbumes
 	FR	Cherche albums
+	PL	Wyszukaj albumy
 
 SEARCHFOR_SONGS
 	CS	Hledat skladby
@@ -15431,6 +15636,7 @@ SEARCHFOR_SONGS
 SEARCHFOR_SONGS_DBL
 	ES	Buscar Canciones
 	FR	Cherche morceaux
+	PL	Wyszukaj utwory
 
 SEARCHFOR_SONGTITLE
 	CS	Hledat název skladby
@@ -15890,21 +16096,6 @@ RADIO_TUNEIN
 	SV	Ange webbadress
 	ZH_CN	收音机网址
 
-RADIOIO
-	CS	RadioIO
-	DA	RadioIO
-	DE	RadioIO
-	EN	RadioIO
-	ES	RadioIO
-	FI	RadioIO
-	FR	RadioIO
-	IT	RadioIO
-	NL	RadioIO
-	NO	RadioIO
-	PL	RadioIO
-	RU	RadioIO
-	SV	RadioIO
-
 SHOUTCAST
 	CS	SHOUTcast
 	DA	SHOUTcast
@@ -16012,19 +16203,8 @@ RADIO_PROVIDERS_SOMAFM
 	SV	SomaFM
 
 RADIO_PROVIDERS_SKYFM
-	CS	SKY.fm
-	DA	SKY.fm
-	DE	SKY.fm
-	EN	SKY.fm
-	ES	SKY.fm
-	FI	SKY.fm
-	FR	SKY.fm
-	IT	SKY.fm
-	NL	SKY.fm
-	NO	SKY.fm
-	PL	SKY.fm
-	RU	SKY.fm
-	SV	SKY.fm
+	EN	RadioTunes
+	NL	RadioTunes
 
 RADIO_PROVIDERS_RADIODE
 	CS	radio.de
@@ -16489,6 +16669,7 @@ URL
 	HE	כתובת URL
 	IT	URL
 	NL	URL
+	PL	URL
 	ZH_CN	网址
 
 INFORMATION
@@ -16911,6 +17092,13 @@ INFORMATION_PLUGINDIRS
 	RU	Папки подключаемых модулей
 	SV	Mappar för plugin-program
 
+INFORMATION_BINDIRS
+	DE	Ordner für Hilfsprogramme
+	EN	Helper Applications Folder
+	FR	Dossier pour les applications utilitaires
+	NL	Map hulptoepassingen
+	PL	Folder aplikacji pomocniczych
+
 INFORMATION_ARCHITECTURE
 	CS	Architektura platformy
 	DA	Platformarkitektur
@@ -17222,7 +17410,7 @@ INFORMATION_OPERATINGSYSTEM_ABBR
 	IT	Sistema operativo
 	NL	Besturingssysteem
 	NO	OS
-	PL	System operacyjny
+	PL	System
 	RU	ОС
 	SV	Operativsystem
 
@@ -17440,6 +17628,20 @@ NOT
 	RU	не
 	SV	inte
 	ZH_CN	不
+
+RANGE
+	DE	Bereich
+	EN	range
+	FR	compris entre
+	NL	bereik
+	PL	zakres
+
+NOT_IN_RANGE
+	DE	nicht im Bereich
+	EN	not in range
+	FR	non compris entre
+	NL	niet binnen bereik
+	PL	poza zakresem
 
 # The space before the French : is there on purpose.
 
@@ -17773,23 +17975,6 @@ SQUEEZEBOX_SERVER_CONNECTING
 	SV	Ansluts till %s...
 	ZH_CN	%s连接中...
 
-UPNP_REQUEST_FAILED
-	CS	Selhal požadavek UPnP, zkontrolujte prosím server UPnP.
-	DA	UPnP-anmodning mislykkedes. Kontroller UPnP-serveren.
-	DE	Fehler bei der UPnP-Anforderung. Prüfen Sie den UPnP-Server.
-	EN	UPnP request failed, please check the UPnP server.
-	ES	Fallo de solicitud UPnP, compruebe el servidor UPnP.
-	FI	UPnP-pyyntö epäonnistui, tarkista UPnP-palvelin.
-	FR	Echec de la requête UPnP. Veuillez vérifier le serveur UPnP.
-	HE	כשל בבקשת UPnP, בדוק את שרת ה-UPnP.
-	IT	Richiesta UPnP non riuscita. Verificare il server UPnP.
-	NL	UPnP-verzoek mislukt. Controleer de UPnP-server.
-	NO	UPnP-forespørsel mislyktes. Kontroller UPnP-serveren.
-	PL	Wykonanie żądania UPnP nie powiodło się; sprawdź serwer UPnP.
-	RU	Сбой запроса UPnP, проверьте сервер UPnP.
-	SV	UPnP-begäran misslyckades. Kontrollera UPnP-servern.
-	ZH_CN	UPnP请求失败，请检查UPnP服务器。
-
 SETUP_SCROLLMODE
 	CS	Režim rolování
 	DA	Rullefunktion
@@ -18061,40 +18246,6 @@ SETUP_USEBANDASALBUMARTIST_DESC
 	RU	Альбомы песен с тегами группы могут быть перечислены в списке с названием этой группы или другими исполнителями данного альбома. Тег группы также называется TPE2 и в некоторых программах может отображаться как "Исполнитель альбома".
 	SV	Album som innehåller låtar som taggats med ett bandnamn kan listas under bandnamnet eller tillsammans med de andra artisterna på albumet. Bandtaggen kallas också TPE2, och visas i vissa program som Albumartist.
 
-SETUP_USEBANDASALBUMARTIST_1
-	CS	Vypsat alba podle skupin
-	DA	Vis album efter band
-	DE	Alben nach Band ordnen
-	EN	List albums by band
-	ES	Lista de álbumes por banda
-	FI	Luetteloi levyt yhtyeen mukaan
-	FR	Lister les albums par groupe
-	HE	סידור אלבומים ברשימה לפי להקה
-	IT	Elenca gli album per gruppo
-	NL	Albums bij band weergeven
-	NO	Vis album etter gruppe
-	PL	Wyświetl albumy według zespołu
-	RU	Список альбомов по группе
-	SV	Lista album efter band
-	ZH_CN	专辑按团体列出
-
-SETUP_USEBANDASALBUMARTIST_0
-	CS	Vypsat alba podle všech interpretů tohoto alba
-	DA	Vis album efter alle kunstnere på albumet
-	DE	Alben nach allen Interpreten des Albums ordnen
-	EN	List albums by all artists for that album
-	ES	Lista de álbumes con todos los artistas de ese álbum
-	FI	Luetteloi levyt kaikkien levyllä olevien artistien mukaan
-	FR	Lister les albums par tous les artistes
-	HE	סידור אלבומים ברשימה לפי כל המבצעים באותו אלבום
-	IT	Elenca gli album per artisti dell'album
-	NL	Albums bij alle artiesten voor dat album weergeven
-	NO	Vis album med alle artister i albumet
-	PL	Wyświetl albumy według wszystkich wykonawców tego albumu
-	RU	Альбомы по всем исполнителям этого альбома
-	SV	Lista album efter alla albumets artister
-	ZH_CN	专辑按艺人列出
-
 SETUP_USETPE2ASALBUMARTIST_DESC
 	CS	Formát MP3 tagů neposkytuje standardní způsob, jak definovat Interpreta alba. Některé nástroje pro MP3 tagy používají pro Interpreta alba pole TPE2 (iTunes, Winamp, Windows Media Player), jiné je mohou používat pro zamýšlený význam "Skupina/orchestr". Zvolte význam, který má Logitech Media Server používat. Po změně tohoto nastavení začne opakované prohledávání vaší hudební knihovny.
 	DA	MP3-mærkeformatet er en standardiseret metode til at definere en kunstner og dennes album. Nogle programmer til at håndtere mp3-mærker benytter feltet TPE2 til Albumkunstner (iTunes, Winamp, Windows Media Player) mens andre benytter det til den intenderede betydning af  Band/orkester. Du skal vælge hvilken model der skal bruges i Logitech Media Server. Hvis du ændrer indstillingen, bliver hele musikbiblioteket gennemsøgt igen.
@@ -18164,7 +18315,7 @@ SETUP_POWERONRESUME
 	EN	Power On Resume
 	ES	Cómo reanudar al encender
 	FI	Jatka käynnistettäessä
-	FR	Reprise après allumage
+	FR	Reprise après démarrage
 	HE	חידוש ההפעלה
 	IT	Ripristino all'accensione
 	NL	Actie bij aanzetten muzieksysteem
@@ -18197,7 +18348,7 @@ SETUP_POWERONRESUME_PAUSEOFF_NONEON
 	EN	Pause at power off / Remain paused at power on
 	ES	Pausa al apagar / Seguir en pausa al encender
 	FI	Tauota, kun virta katkaistaan / pidä tauotettuna, kun virta kytketään
-	FR	Mettre en pause à l'arrêt / Rester en pause à l'allumage
+	FR	Mettre en pause à l'arrêt / Rester en pause au démarrage
 	HE	השהייה בעת כיבוי / שימור ההשהייה בעת הפעלה
 	IT	Pausa allo spegnimento / Rimani in pausa all'accensione
 	NL	Pauzeren bij uitzetten/Pauze handhaven bij aanzetten
@@ -18214,7 +18365,7 @@ SETUP_POWERONRESUME_PAUSEOFF_PLAYON
 	EN	Pause at power off / Resume at power on
 	ES	Pausa al apagar / Reanudar al encender
 	FI	Tauota, kun virta katkaistaan / jatka toistoa, kun virta kytketään
-	FR	Mettre en pause à l'arrêt / Reprendre à l'allumage
+	FR	Mettre en pause à l'arrêt / Reprendre au démarrage
 	HE	השהייה בעת כיבוי / חידוש הפעלה בעת הפעלה
 	IT	Pausa allo spegnimento / Riprendi all'accensione
 	NL	Pauzeren bij uitzetten/Hervatten bij aanzetten
@@ -18231,10 +18382,10 @@ SETUP_POWERONRESUME_STOPOFF_PLAYON
 	EN	Stop at power off / Restart song at power on
 	ES	Detener al apagar / Reiniciar canción al encender
 	FI	Pysäytä toisto, kun virta katkaistaan / jatka toistoa, kun virta kytketään
-	FR	Stopper à l'arrêt / Redémarrer le morceau à l'allumage
+	FR	Stopper à l'arrêt / Redémarrer le morceau au démarrage
 	HE	עצירה בעת כיבוי / הפעלה מחדש בעת הפעלה
 	IT	Interrompi allo spegnimento / Ricomincia brano all'accensione
-	NL	Stoppen bij uitzetten/liedje opnieuw starten bij aanzetten
+	NL	Stoppen bij uitzetten / Nummer opnieuw starten bij aanzetten
 	NO	Stans avspilling når av / Start sang på nytt ved oppstart
 	PL	Zatrzymaj po wyłączeniu / Ponownie odtwórz utwór po włączeniu
 	RU	Остановка при выкл. / С начала песни при вкл.
@@ -18248,7 +18399,7 @@ SETUP_POWERONRESUME_STOPOFF_NONEON
 	EN	Stop at power off / Remain stopped at power on
 	ES	Detener al apagar / Seguir detenido al encender
 	FI	Lopeta, kun virta katkaistaan / jatka, kun virta kytketään
-	FR	Stopper à l'arrêt / Rester stoppé à l'allumage
+	FR	Stopper à l'arrêt / Rester stoppé au démarrage
 	HE	עצירה בעת כיבוי / שימור העצירה בעת הפעלה
 	IT	Interrompi allo spegnimento / Non riprendere all'accensione
 	NL	Stoppen bij uitzetten/gestopt blijven bij aanzetten
@@ -18265,7 +18416,7 @@ SETUP_POWERONRESUME_STOPOFF_RESETPLAYON
 	EN	Stop at power off / Restart playlist at power on
 	ES	Detener al apagar / Reiniciar lista de reproducción al encender
 	FI	Pysäytä toisto, kun virta katkaistaan / jatka soittoluettelon toistoa, kun virta kytketään
-	FR	Stopper à l'arrêt / Redémarrer la liste de lecture à l'allumage
+	FR	Stopper à l'arrêt / Redémarrer la liste de lecture au démarrage
 	HE	עצירה בעת כיבוי / הפעלה מחדש של רשימת ההשמעה בעת הפעלה
 	IT	Interrompi allo spegnimento / Riavvia playlist all'accensione
 	NL	Stoppen bij uitzetten/playlist opnieuw starten bij aanzetten
@@ -18282,7 +18433,7 @@ SETUP_POWERONRESUME_STOPOFF_RESETON
 	EN	Stop at power off / Reset playlist at power on
 	ES	Detener al apagar / Restablecer lista de reproducción lista al encender
 	FI	Lopeta, kun virta katkaistaan / nollaa soittoluettelo, kun virta kytketään
-	FR	Stopper à l'arrêt / Réinitialiser la liste de lecture à l'allumage
+	FR	Stopper à l'arrêt / Réinitialiser la liste de lecture au démarrage
 	HE	עצירה בעת כיבוי / איפוס רשימת ההשמעה בעת הפעלה
 	IT	Interrompi allo spegnimento / Reimposta playlist all'accensione
 	NL	Stoppen bij uitzetten/playlist opnieuw instellen bij aanzetten
@@ -18388,7 +18539,7 @@ SETUP_LARGETEXTFONT_0
 	IT	Classico
 	NL	Klassiek
 	NO	Klassisk
-	PL	Klasyczne
+	PL	Klasyczna
 	RU	Classic
 	SV	Klassisk
 	ZH_CN	典型
@@ -18405,7 +18556,7 @@ SETUP_LARGETEXTFONT_1
 	IT	Moderno
 	NL	Modern
 	NO	Moderne
-	PL	Nowoczesne
+	PL	Nowoczesna
 	RU	Современный
 	SV	Modern
 	ZH_CN	现代
@@ -18616,7 +18767,7 @@ SETUP_FXLOOPSOURCE
 	CS	Vstup efektové smyčky
 	DA	Input til effektsløjfe
 	DE	Effektschleifen-Eingabe
-	EN	Effects loop input
+	EN	Effects Loop Input
 	ES	Entrada de bucle de efectos
 	FI	Tehostesilmukan tulo
 	FR	Entrée de boucle d'effets
@@ -18661,7 +18812,7 @@ SETUP_FXLOOPCLOCK
 	CS	Režim hodin efektové smyčky
 	DA	Clockfunktion til effektsløjfer
 	DE	Taktmodus für Effektschleife
-	EN	Effects loop clock mode
+	EN	Effects Loop Clock Mode
 	ES	Modo de reloj de bucle de efectos
 	FI	Tehosteiden silmukan kellotila
 	FR	Mode horloge de boucle d'effets
@@ -18859,7 +19010,7 @@ SETUP_PRECACHEARTWORK_ALL
 	IT	Inserire le copertine di album, foto e video nella pre-cache
 	NL	Afbeeldingen van albums, foto's en video's vooraf in cache opslaan
 	NO	Forhåndsbufre album, fotografier og videoer
-	PL	Buforuj wstępnie materiały graficzne do płyt, zdjęć i filmów wideo
+	PL	Buforuj wstępnie materiały graficzne do albumów, zdjęć i filmów wideo
 	RU	Pre-cache album, photo and video artwork
 	SV	Cachelagra omslag för album, foton och videor
 
@@ -18874,7 +19025,7 @@ SETUP_PRECACHEARTWORK_ENABLED
 	IT	Copertina album in pre-cache
 	NL	Afbeeldingen van albums vooraf in cache opslaan
 	NO	Forhåndsbufre albumomslag
-	PL	Buforuj wstępnie okładkę płyty
+	PL	Buforuj wstępnie okładkę albumu
 	RU	Предварительно кэшировать обложку альбома
 	SV	Cachelagra albumomslag
 
@@ -18892,6 +19043,41 @@ SETUP_PRECACHEARTWORK_DISABLED
 	PL	Nie buforuj wstępnie okładek
 	RU	Не кэшировать обложки предварительно
 	SV	Cachelagra inte albumomslag
+
+SETUP_PRECACHEARTWORK_CUSTOM_SPECS
+	DE	Spezifikationen für Zwischenspeicherung
+	EN	Custom pre-caching specifications
+	FR	paramétrage personnalisé du pré-cache
+	NL	Aangepaste specificaties pre-caching
+	PL	Dostosowanie ustawień bufora
+	
+SETUP_IMAGEPROXY
+	DE	Plattenhüllen Grössenanpassung
+	EN	Artwork resizing
+	FR	Redimensionner les pochettes
+	NL	Afbeeldingen schalen
+	PL	Dopasowywanie rozmiarów okładek
+
+SETUP_IMAGEPROXY_DESC
+	DE	Bevor Plattenhüllen zu den Endgeräten geschickt werden, werden sie in der Grösse angepasst, um eine gute Qualität und Performance zu erreichen. Dies erfolgt standardmässig auf mysqueezebox.com. Sollten Sie eine interne Quelle verwenden, welche von mysqueezebox.com nicht erreicht werden kann, oder möchten Sie unabhängiger von mysqueezebox.com sein, so verwenden Sie die Logitech Media Server gestützte Grössenanpassung.
+	EN	In order to get best quality artwork and performance on the devices, artwork files are resized before being sent to the client. By default this is handled by mysqueezebox.com. If you want to be independent from mysqueezebox.com or are running an internal streaming source, you might want to use Logitech Media Server's internal resizing.
+	FR	Pour obtenir des pochettes de la meilleure qualité et un affichage performant, les pochettes doivent être redimensionnées au préalabale sur le serveur, mysqueezebox.com par défaut. Pour être indépendant de mysqueezebox.com ou pour diffuser des sources locales, vous pouvez choisir Logitech Media Server pour redimensionner les pochettes.
+	NL	Om de beste kwaliteit afbeeldingen en prestatie van je systeem te krijgen, worden deze geschaald voordat ze naar je muzieksysteem worden gestuurd. Standaard wordt dit door mysqueezebox.com gedaan. Als je onafhankelijk van mysqueezebox.com wilt zijn of een interne muziekbron gebruikt, kun je Logitech Media Server gebruiken om te schalen.
+	PL	W celu uzyskania najlepszej jakości okładki i wydajności na odtwarzaczach, okładki są dopasowywane względem rozmiaru przed przesłaniem do odtwarzacza. Domyślnie jest to obsłużone przez mysqueezebox.com. Jeśli chcesz być niezależny od mysqueezebox.com, lub używasz lokalnego źródła, możesz pozwolić, aby to Logitech Media Server zajął się dopasowywaniem okładek.
+
+SETUP_IMAGEPROXY_REMOTE
+	DE	Plattenhüllen auf mysqueezebox.com anpassen
+	EN	Use mysqueezebox.com to resize artwork
+	FR	Redimensionner les pochettes avec mysqueezebox.com
+	NL	Gebruik mysqueezebox.com om afbeeldingen te schalen
+	PL	Użyj mysqueezebox.com do dopasowywania okładek   
+
+SETUP_IMAGEPROXY_LOCAL
+	DE	Plattenhüllen lokal in Logitech Media Server anpassen
+	EN	Use Logitech Media Server to resize artwork
+	FR	Redimensionner les pochettes avec Logitech Media Server
+	NL	Gebruik Logitech Media Server om afbeeldingen te schalen
+	PL	Użyj Logitech Media Server do dopasowywania okładek   
 
 SETUP_SERVERPRIORITY
 	CS	Priorita serveru
@@ -19024,7 +19210,7 @@ SETUP_PRIORITY_NORMAL
 	IT	Normale
 	NL	Normaal
 	NO	Normal
-	PL	Zwykły
+	PL	Normalny
 	RU	Обычный
 	SV	Normal
 	ZH_CN	中
@@ -19058,7 +19244,7 @@ SETUP_PRIORITY_LOW
 	IT	Bassa
 	NL	Laag
 	NO	Lav
-	PL	Niskie
+	PL	Niski
 	RU	Низкий
 	SV	Låg
 	ZH_CN	低
@@ -19203,7 +19389,7 @@ SETUP_WORDCLOCKOUTPUT
 	CS	Signál taktu (Word Clock) na výstupech S/PDIF
 	DA	Wordclock på S/PDIF-udgangen
 	DE	Word Clock an S/PDIF-Ausgängen
-	EN	Word Clock On S/PDIF Outputs
+	EN	Word Clock on S/PDIF Outputs
 	ES	Reloj de palabras en salidas S/PDIF
 	FI	Word Clock päällä S/PDIF-lähdöissä
 	FR	Word Clock sur les sorties S/PDIF
@@ -19567,13 +19753,13 @@ SETUP_POLARITYINVERSION
 SETUP_POLARITYINVERSION_DESC
 	CS	Transporter může převrátit polaritu audio signálu..
 	DA	Transporter kan invertere lydsignalets polaritet.
-	DE	Transporter kann die Polarität des Audiosignals umkehren.
-	EN	Transporter can invert the polarity of the audio signal.
-	ES	Transporter puede invertir la polaridad de la señal de audio.
+	DE	Der Player kann die Polarität des Audiosignals umkehren.
+	EN	The player can invert the polarity of the audio signal.
+	ES	Un reproductor puede invertir la polaridad de la señal de audio.
 	FI	Transporter voi kääntää äänisignaalin napaisuuden.
-	FR	Transport peut inverser la polarité du signal audio.
+	FR	La platine peut inverser la polarité du signal audio.
 	HE	Transporter יכול להפוך את הקוטביות של אות השמע.
-	IT	Transporter consente di invertire la polarità del segnale audio.
+	IT	Il lettore inverte la fase del segnale audio.
 	NL	De Transporter kan de polariteit van het audiosignaal omkeren.
 	NO	Transporter kan endre polariteten til lydsignalet.
 	PL	Urządzenie Transporter może odwrócić polaryzację sygnału audio.
@@ -19714,6 +19900,13 @@ DEBUG_ARTWORK
 	PL	Wyświetlanie i dopasowywanie okładek
 	RU	Показ и сопоставление обложек
 	SV	Visning och matchning av albumomslag
+
+DEBUG_ARTWORK_IMAGEPROXY
+	DE	Plattenhüllen Grössenanpassunsproxy
+	EN	Artwork Resizing Proxy
+	FR	Redimensionner les pochettes en amont
+	NL	Afbeeldingen Schalen Proxy
+	PL	Proxy dla dopasowywania rozmiarów okładek
 
 DEBUG_FACTORYTEST
 	CS	Informace použité při výrobních zkouškách
@@ -20089,6 +20282,13 @@ DEBUG_DATABASE_INFO
 	PL	Rejestrowanie metadanych i analizy
 	RU	Ведение журнала метаданных и анализа
 	SV	Loggning av metadata och tolkning
+
+DEBUG_DATABASE_VIRTUALLIBRARIES
+	DE	Musiksammlungs-Ansichten (Virtual Libraries)
+	EN	Library Views (virtual libraries)
+	FR	Bibliothèques thématiques (bibliothèques virtuelles)
+	NL	Deelcollecties (virtual libraries)
+	PL	Biblioteki tematyczne
 
 DEBUG_OS_FILES
 	CS	Informace o úrovni souborového systému
@@ -20555,6 +20755,13 @@ SETUP_DEBUG_PERFMON_LOG_DESC
 	RU	Файл журнала мониторинга производительности Logitech Media Server хранится здесь:
 	SV	Prestandaövervakning loggas här:
 
+SETUP_LOG_ZIPPED
+	DE	ZIP Datei
+	EN	ZIP archive
+	FR	Fichier ZIP
+	NL	Zipbestand
+	PL	archiwum ZIP
+
 SETUP_DEBUG_LEVEL_OFF
 	CS	Vypnuto
 	DA	Fra
@@ -20949,6 +21156,13 @@ MERGEVA_PROGRESS
 	RU	Объединить неск. исполнителей
 	SV	Slå ihop Blandade artister
 
+UPDATESTANDALONEARTWORK_PROGRESS
+	DE	Nach aktualisierten Plattenhüllen suchen
+	EN	Find updated coverart files
+	FR	Recherche des pochettes des albums actualisés
+	NL	Vind geüpdatete hoesafbeeldingen
+	PL	Wyszukaj zaktualizowane pliki okładek
+
 PRECACHEARTWORK_PROGRESS
 	CS	Příprava ukládání obalu do mezipaměti
 	DA	Gem coverbilleder i cachelager
@@ -21053,6 +21267,41 @@ IMPORTER_PROGRESS_DESC
 	PL	Na tej stronie widoczny jest postęp każdego etapu procesu przeszukiwania.
 	RU	Здесь отображается выполнение каждого этапа сканирования.
 	SV	På den här sidan visas förloppet för varje fas i sökningsprocessen.
+
+VIRTUALLIBRARIES_PROGRESS
+	DE	Musiksammlungs-Ansichten erstellen
+	EN	Create library views
+	FR	Création d'une bibliothèque thématique
+	NL	Deelcollectie maken
+	PL	Utwórz biblioteki tematyczne
+
+AS_VIRTUAL_LIBRARY
+	DE	Als Ansicht
+	EN	As Library View
+	FR	Comme une bibliothèque thématique
+	NL	Als Deelcollectie
+	PL	Jako biblioteka tematyczna
+
+VIRTUALLIBRARIES
+	DE	Bibliotheksansichten
+	EN	Library Views
+	FR	Bibliothèques thématiques
+	NL	Deelcollecties
+	PL	Biblioteki tematyczne
+
+ALL_LIBRARY
+	DE	Ganze Musiksammlung
+	EN	All music library
+	FR	Bibliothèque complète
+	NL	Hele muziekcollectie
+	PL	Cała biblioteka muzyczna
+	
+SUB_LIBRARY
+	DE	Aktive Bibliotheksansicht
+	EN	Selected library view
+	FR	Bibliothèque thématique active
+	NL	Geselecteerde deelcollectie
+	PL	Wybrana biblioteka tematyczna
 
 RUNNING
 	CS	Spuštěno
@@ -21193,7 +21442,7 @@ PLUGINS_CHANGED
 PLUGINS_CHANGED_NEED_RESTART
 	CS	Změny se projeví při příštím spuštění aplikace. <a href="%s">K restartování serveru klikněte sem.</a>
 	DA	Ændringerne vil træde i kraft næste gang programmet startes. <a href="%s">Klik her for at genstarte serveren nu.</a>
-	DE	Beim nächsten Neustart der Anwendung werden die Änderungen wirksam.<a href="%s">Klicken Sie hier, um den Server jetzt neu zu starten.</a>
+	DE	Beim nächsten Neustart der Anwendung werden die Änderungen wirksam. <a href="%s">Klicken Sie hier, um den Server jetzt neu zu starten.</a>
 	EN	Changes will take place at the next application restart. <a href="%s">Please click here to restart the server now.</a>
 	ES	Los cambios entrarán en vigor la próxima vez que se reinicie la aplicación. <a href="%s">Haga clic aquí para reiniciar el servidor ahora.</a>
 	FI	Muutokset tulevat voimaan, kun sovellus käynnistetään seuraavan kerran uudestaan. <a href="%s">Käynnistä palvelin uudelleen nyt napsauttamalla tästä.</a>
@@ -21500,7 +21749,7 @@ JIVE_PLAY_THIS_SONG
 	FI	Soita tämä kappale
 	FR	Lire ce morceau
 	IT	Riproduci questo brano
-	NL	Dit liedje afspelen
+	NL	Dit nummer afspelen
 	NO	Spill denne sangen
 	PL	Odtwórz ten utwór
 	RU	Воспроизвести эту песню
@@ -22060,6 +22309,12 @@ RECENT_SEARCHES
 	PL	Ostatnie wyszukiwania
 	RU	Недавние поисковые запросы
 	SV	Nyligen gjorda sökningar
+
+SAVED_SEARCH
+	DE	Gespeicherte Suche
+	EN	Saved Search
+	FR	Recherches enregistrées
+	NL	Opgeslagen zoekresultaat
 
 ALBUMS_SORT_METHOD
 	CS	Způsob řazení alb
@@ -23919,3 +24174,108 @@ SYNC_ABOUT
 	RU	Добавьте еще один или несколько плееров Squeezebox, чтобы использовать функцию синхронизации и реализовать полный потенциал многокомнатной аудиосистемы. Дополнительные сведения см. на сайте Logitech.com.
 	SV	Om du lägger till en eller flera ytterligare Squeezebox-enheter kan du använda synkroniseringsfunktionen och njuta fullt ut av ljud i flera rum. Du hittar mer information på Logitech.com.
 
+SETUP_DEFEAT_DESTRUCTIVE_TTP
+# SLT - try to keep this as short as possible...
+	DE	Destruktive "Wiedergabe durch Berühren" unterdrücken 
+	EN	Defeat destructive Touch-To-Play
+	FR	Nouvelle sélection et liste de lecture en cours
+	NL	Bevestigen Touch-To-Play
+	PL	Zachowanie Touch-To-Play
+
+SETUP_DEFEAT_DESTRUCTIVE_TTP_DESC
+	DE	Durch das Berühren/auswählen eines Musikstückes auf der Squeezebox kann versehentlich eine aktuelle Wiedergabeliste ersetzt werden. Dieses destruktive Verhalten kann mit dieser Einstellunge kontrolliert weren.
+	EN	When touching/selecting a playable item on your Squeezebox, you can accidentally replace what is currently playing. This destructive behaviour can be controlled using this parameter. 
+	FR	La sélection d'un titre peut accidentellement remplacer la liste de lecture en cours. Ce paramètre propose plusieurs comportements suite à une sélection.
+	NL	Bij het aanraken/selecteren van een afspeelbaar item op je Squeezebox, kun je per ongeluk vervangen wat op dat moment wordt afgespeeld. Dit gedrag kan worden aangepast met behulp van deze instelling.
+	PL	Przy wyborze/zaznaczeniu utworu można przypadkowo zastąpić aktualną listę odtwarzania. To destrukcyjne zachowanie może być zmienione za pomocą tej opcji.
+
+SETUP_DEFEAT_DESTRUCTIVE_TTP_0
+	DE	Destruktives Verhalten nicht unterdrücken
+	EN	Do not defeat
+	FR	Continuer la liste de lecture en cours
+	NL	Niet vragen
+	PL	Zawsze zezwalaj na odtwarzanie wybranych utworów
+
+SETUP_DEFEAT_DESTRUCTIVE_TTP_1
+	DE	Vor dem Ersetzen der Wiedergabeliste immer nachfragen
+	EN	Always ask before playing your selection
+	FR	Toujours demander une confirmation avant de lancer le titre sélectionné
+	NL	Altijd vragen om je selectie af te spelen
+	PL	Pytaj przed rozpoczęciem odtwarzania wybranych utworów
+
+SETUP_DEFEAT_DESTRUCTIVE_TTP_2
+	DE	Nachfragen, wenn die aktuelle Wiedergabeliste mehr als einen Titel enthält
+	EN	Defeat if current playlist has more than one track
+	FR	Demander une confirmation si la liste de lecture actuelle a plus d'un titre
+	NL	Vragen als de huidige playlist meer dan een nummer bevat
+	PL	Nie pozwól, gdy aktualna lista odtwarzania zawiera więcej niż jeden utwór
+
+SETUP_DEFEAT_DESTRUCTIVE_TTP_3
+	DE	Nachfragen, wenn die aktuelle Wiedergabeliste mehr als einen Titel enthält und die Wiedergabe läuft
+	EN	Defeat only if playing and current playlist has more than one track
+	FR	Demander une confirmation uniquement si la liste de lecture est en cours et a plus d'un titre
+	NL	Alleen vragen als de huidige playlist meer dan een nummer bevat
+	PL	Nie pozwól tylko wtedy, gdy trwa odtwarzanie oraz aktualna lista odtwarzania zawiera więcej niż jeden utwór
+	
+SETUP_DEFEAT_DESTRUCTIVE_TTP_4
+	DE	Nachfragen, wenn die Wiedergabe läuft, und aktuell keine Radiostation wiedergegeben wird
+	EN	Defeat only if playing and current item is not a radio stream
+	FR	Demander une confirmation uniquement si une radio n'est pas en cours de diffusion
+	NL	Alleen vragen als het huidige afgespeelde nummer geen radiostream is
+	PL	Nie pozwól tylko wtedy, gdy trwa odtwarzanie i aktualny utwór nie jest strumieniem radiowym
+
+ON_MYSB
+	CS	Na mysqueezebox.com
+	DA	På mysqueezebox.com
+	DE	Auf mysqueezebox.com
+	EN	On mysqueezebox.com
+	ES	En mysqueezebox.com
+	FI	Sivustolla mysqueezebox.com
+	FR	Sur mysqueezebox.com
+	IT	Su mysqueezebox.com
+	NL	Op mysqueezebox.com
+	NO	På mysqueezebox.com
+	PL	W witrynie mysqueezebox.com
+	RU	На mysqueezebox.com
+	SV	På mysqueezebox.com
+
+SERVER_UPDATE_AVAILABLE
+	CS	K dispozici je nová verze Logitech Media Server (%s). <a href="%s" target="update">Pro stažení klikněte na zde</a>.
+	DA	Der findes en ny version af Logitech Media Server (%s). <a href="%s" target="update">Klik her for at hente den</a>.
+	DE	Eine neue Version von Logitech Media Server ist verfügbar (%s). <a href="%s" target="update">Klicken Sie hier, um sie herunterzuladen</a>.
+	EN	A new version of Logitech Media Server is available (%s). <a href="%s" target="update">Click here to download</a>.
+	ES	Hay disponible una nueva versión de Logitech Media Server (%s). <a href="%s" target="update">Haga clic aquí para descargarla</a>.
+	FI	Logitech Media Serveristä on tarjolla uusi versio (%s). <a href="%s" target="update">Lataa se napsauttamalla tässä</a>.
+	FR	Une nouvelle version de Logitech Media Server est disponible (%s). <a href="%s" target="update">Cliquez ici pour la télécharger</a>.
+	IT	È disponibile una nuova versione di Logitech Media Server (%s). <a href="%s" target="update">Fare clic qui per scaricarla</a>.
+	NL	Er is een nieuwe versie van Logitech Media Server beschikbaar (%s). <a href="%s" target="update">Klik op hier om deze te downloaden</a>.
+	NO	En ny versjon av Logitech Media Server er tilgjengelig (%s). <a href="%s" target="update">Klikk her for å laste den ned</a>.
+	PL	Dostępna jest nowa wersja oprogramowania Logitech Media Server (%s). <a href="%s" target="update">Kliknij tutaj, aby pobrać</a>.
+	RU	Доступна новая версия Logitech Media Server (%s). <a href="%s" target="update">Для загрузки щелкните здесь</a>.
+	SV	Det finns en ny version av Logitech Media Server (%s). <a href="%s" target="update">Klicka här för att ladda ner den</a>.
+
+SERVER_UPDATE_AVAILABLE_SHORT
+	CS	K dispozici je nová verze Logitech Media Server.
+	DA	Der findes en ny version af Logitech Media Server.
+	DE	Eine neue Version von Logitech Media Server ist verfügbar.
+	EN	A new version of Logitech Media Server is available.
+	ES	Hay disponible una nueva versión de Logitech Media Server.
+	FI	Logitech Media Serveristä on tarjolla uusi versio.
+	FR	Une nouvelle version de Logitech Media Server est disponible.
+	IT	È disponibile una nuova versione di Logitech Media Server.
+	NL	Er is een nieuwe versie van Logitech Media Server beschikbaar.
+	NO	En ny versjon av Logitech Media Server er tilgjengelig.
+	PL	Dostępna jest nowa wersja oprogramowania Logitech Media Server.
+	RU	Доступна новая версия Logitech Media Server.
+	SV	Det finns en ny version av Logitech Media Server.
+
+SERVER_LINUX_UPDATE_AVAILABLE
+	DE	Eine neue Version von Logitech Media Server ist verfügbar (%s). <a href="updateinfo.html?installerFile=%s" target="update">Klicken Sie hier für weitere Instruktionen</a>.
+	EN	A new version of Logitech Media Server is available (%s). <a href="updateinfo.html?installerFile=%s" target="update">Click here for further information</a>.
+	FR	Une nouvelle version de Logitech Media Server est disponible (%s). <a href="updateinfo.html?installerFile=%s" target="update">Cliquez ici pour plus d'info</a>.
+	NL	Er is een nieuwe versie van Logitech Media Server beschikbaar (%s). <a href="updateinfo.html?installerFile=%s" target="update">Klik op hier</a>.
+	PL	Nowa wersja Logitech Media Server jest dostępna (%s). <a href="updateinfo.html?installerFile=%s" target="update">Kliknij tutaj w celu uzyskania dodatkowej wiadomości</a>.
+
+UPDATES_LATEST_CHANGES
+	DE	Letzte Änderungen (<a href="%s" target="_blank">alle Änderungen</a>)
+	EN	Latest Changes (<a href="%s" target="_blank">all changes</a>)

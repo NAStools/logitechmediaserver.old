@@ -504,6 +504,7 @@ sub trackInfoURL {
 }
 
 # Track Info menu
+=pod XXX - legacy track info menu from before Slim::Menu::TrackInfo times?
 sub trackInfo {
 	my ( $class, $client, $track ) = @_;
 	
@@ -524,6 +525,7 @@ sub trackInfo {
 	
 	$client->modeParam( 'handledTransition', 1 );
 }
+=cut
 
 # Metadata for a URL, used by CLI/JSON clients
 sub getMetadataFor {
@@ -704,46 +706,6 @@ sub getIcon {
 	my ( $class, $url ) = @_;
 
 	return Slim::Plugin::Deezer::Plugin->_pluginDataFor('icon');
-}
-
-# SN only, re-init upon reconnection
-sub reinit {
-	my ( $class, $client, $song ) = @_;
-	
-	# Reset song duration/progress bar
-	my $url = $song->track->url();
-	
-	main::DEBUGLOG && $log->is_debug && $log->debug("Re-init Deezer - $url");
-	
-	my $cache     = Slim::Utils::Cache->new;
-	my ($trackId) = $url =~ m{deezer://(.+)\.mp3};
-	my $meta      = $cache->get( 'deezer_meta_' . $trackId );
-	
-	if ( $meta ) {			
-		# Back to Now Playing
-		Slim::Buttons::Common::pushMode( $client, 'playlist' );
-	
-		# Reset song duration/progress bar
-		if ( $meta->{duration} ) {
-			$song->duration( $meta->{duration} );
-			
-			# On a timer because $client->currentsongqueue does not exist yet
-			Slim::Utils::Timers::setTimer(
-				$client,
-				Time::HiRes::time(),
-				sub {
-					my $client = shift;
-				
-					$client->streamingProgressBar( {
-						url      => $url,
-						duration => $meta->{duration},
-					} );
-				},
-			);
-		}
-	}
-	
-	return 1;
 }
 
 1;

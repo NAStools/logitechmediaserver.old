@@ -7,6 +7,7 @@ use base 'Slim::Schema::DBI';
 
 use Digest::MD5 qw(md5_hex);
 use Scalar::Util qw(blessed);
+use Tie::Cache::LRU::Expires;
 
 use Slim::Schema::ResultSet::Track;
 
@@ -20,6 +21,10 @@ use Slim::Utils::Prefs;
 my $prefs = preferences('server');
 my $log = logger('database.info');
 
+# rendering the playlist will call displayAsHTML repeatedly, often requesting the same artists and albums over and over again
+# keep a small cache of contributor objects for a short period of time, while we're looping the playlist items
+tie my %albumCache, 'Tie::Cache::LRU::Expires', EXPIRES => 5, ENTRIES => 15;
+
 our @allColumns = (qw(
 	id urlmd5 url content_type title titlesort titlesearch album primary_artist tracknum
 	timestamp added_time updated_time filesize disc remote audio audio_size audio_offset year secs
@@ -27,23 +32,6 @@ our @allColumns = (qw(
 	bpm tagversion drm musicmagic_mixable dlna_profile
 	musicbrainz_id lossless lyrics replay_gain replay_peak extid virtual
 ));
-
-if ( main::SLIM_SERVICE ) {
-	my @snColumns = (qw(
-		id url content_type title tracknum
-		filesize remote secs vbr_scale bitrate
-	));
-	
-	# Empty stubs for other columns
-	for my $col ( @allColumns ) {
-		if ( !grep { /^$col$/ } @snColumns ) {
-			no strict 'refs';
-			*$col = sub {};
-		}
-	}
-	
-	@allColumns = @snColumns;
-}
 
 {
 	my $class = __PACKAGE__;
@@ -57,22 +45,18 @@ if ( main::SLIM_SERVICE ) {
 
 	$class->set_primary_key('id');
 	
-	if ( !main::SLIM_SERVICE ) {
-		# setup our relationships
-		$class->belongs_to('album' => 'Slim::Schema::Album');
-		$class->belongs_to('primary_artist'  => 'Slim::Schema::Contributor');
-		
-		$class->has_many('genreTracks'       => 'Slim::Schema::GenreTrack' => 'track');
-		$class->has_many('comments'          => 'Slim::Schema::Comment'    => 'track');
+	# setup our relationships
+	$class->belongs_to('album' => 'Slim::Schema::Album');
+	$class->belongs_to('primary_artist'  => 'Slim::Schema::Contributor');
+	
+	$class->has_many('genreTracks'       => 'Slim::Schema::GenreTrack' => 'track');
+	$class->has_many('comments'          => 'Slim::Schema::Comment'    => 'track');
 
-		$class->has_many('contributorTracks' => 'Slim::Schema::ContributorTrack');
+	$class->has_many('contributorTracks' => 'Slim::Schema::ContributorTrack');
+	$class->has_many('libraryTracks'     => 'Slim::Schema::LibraryTrack');
 
-		if ($] > 5.007) {
-			$class->utf8_columns(qw/title titlesort lyrics/);
-		}
-	}
-	else {
-		$class->utf8_columns('title');
+	if ($] > 5.007) {
+		$class->utf8_columns(qw/title titlesort lyrics/);
 	}
 
 	$class->resultset_class('Slim::Schema::ResultSet::Track');
@@ -126,8 +110,6 @@ sub attributes {
 
 sub albumid {
 	my $self = shift;
-	
-	return if main::SLIM_SERVICE;
 
 	return $self->get_column('album');
 }
@@ -151,8 +133,6 @@ sub artistName {
 
 sub _artistid {
 	my $self = shift;
-	
-	return if main::SLIM_SERVICE;
 	
 	my $id = undef;
 
@@ -185,8 +165,6 @@ sub artistid {
 sub artist {
 	my $self = shift;
 	
-	return if main::SLIM_SERVICE;
-	
 	my ($id, $artist) = $self->_artistid;
 	
 	return $artist;
@@ -194,8 +172,6 @@ sub artist {
 
 sub artists {
 	my $self = shift;
-	
-	return if main::SLIM_SERVICE;
 
 	# Bug 4024 - include both ARTIST & TRACKARTIST here.
 	return $self->contributorsOfType(qw(ARTIST TRACKARTIST))->all;
@@ -215,7 +191,8 @@ sub artistsWithAttributes {
 		for my $contributor ($self->contributorsOfType($type)->all) {
 
 			push @objs, {
-				'artist'     => $contributor,
+#				'artist'     => $contributor,
+				'artistId'   => $contributor->id,
 				'name'       => $contributor->name,
 				'attributes' => join('&', 
 					join('=', 'contributor.id', $contributor->id),
@@ -250,8 +227,6 @@ sub band {
 
 sub genre {
 	my $self = shift;
-	
-	return if main::SLIM_SERVICE;
 
 	return $self->genres->first;
 }
@@ -501,55 +476,76 @@ sub contributorRoles {
 sub displayAsHTML {
 	my ($self, $form, $descend, $sort) = @_;
 
-	my $format = $prefs->get('titleFormat')->[ $prefs->get('titleFormatWeb') ];
+	my $format = Slim::Music::Info::standardTitleFormat();
 
 	# Go directly to infoFormat, as standardTitle is more client oriented.
 	$form->{'text'}     = Slim::Music::TitleFormatter::infoFormat($self, $format, 'TITLE', $form->{'plugin_meta'});
 	$form->{'item'}     = $self->id;
 	$form->{'itemobj'}  = $self;
+	$form->{'coverid'}  = $self->coverid;
 
 	# Only include Artist & Album if the user doesn't have them defined in a custom title format.
 	if ($format !~ /ARTIST/) {
 
-		if (my $contributors = $self->contributorsOfType(qw(ARTIST TRACKARTIST))) {
+		my $contributor_sth = Slim::Schema->dbh->prepare_cached(sprintf(qq(
+			SELECT DISTINCT(contributor_track.contributor), contributors.name
+			FROM contributor_track, contributors
+			WHERE contributor_track.track = ? AND contributor_track.role IN (%s,%s) AND contributors.id = contributor_track.contributor
+		), map { Slim::Schema::Contributor->typeToRole($_) } qw(ARTIST TRACKARTIST)) );
+		
+		my ($contributorId, $contributorName);
+		$contributor_sth->execute($form->{'item'});
+		$contributor_sth->bind_col( 1, \$contributorId );
+		$contributor_sth->bind_col( 2, \$contributorName );
 
-			my $artist = $contributors->first;
+		my @info;
 
+		while ($contributor_sth->fetch) {
+
+			utf8::decode($contributorName);
+
+			push @info, {
+				'artistId'   => $contributorId,
+				'name'       => $contributorName,
+				'attributes' => 'contributor.id=' . $contributorId,
+			};
+		}
+
+		if (scalar @info) {
 			$form->{'includeArtist'} = 1;
-			$form->{'artist'} = $artist;
-
-			my @info;
-
-			for my $contributor ($contributors->all) {
-				push @info, {
-					'artist'     => $contributor,
-					'name'       => $contributor->name,
-					'attributes' => 'contributor.id=' . $contributor->id,
-				};
-			}
-
 			$form->{'artistsWithAttributes'} = \@info;
 		}
-		elsif ($form->{'plugin_meta'} && $form->{'plugin_meta'}->{'artist'}) {
+		
+		if (!$form->{'includeArtist'} && $form->{'plugin_meta'} && $form->{'plugin_meta'}->{'artist'}) {
 			$form->{'includeArtist'} = 1;
 		}
 	}
 
 	if ($format !~ /ALBUM/) {
 		$form->{'includeAlbum'}  = 1;
+		
+		my $albumId = $self->albumid;
+		my $albumDetails = $albumCache{$albumId};
+		
+		if ( !$albumDetails ) {
+			my $sth = Slim::Schema->dbh->prepare_cached("SELECT title, artwork FROM albums WHERE id = ?");
+			
+			$sth->execute($albumId);
+			$albumDetails = $sth->fetchrow_hashref || {};
+			$sth->finish;
+
+			utf8::decode($albumDetails->{title});
+	
+			$albumCache{$albumId} = $albumDetails;
+		}
+
+		$form->{'albumId'} = $albumId;
+		$form->{'albumTitle'} = $albumDetails->{title};
+		$form->{'artwork_track_id'} = $albumDetails->{artwork};
 	}
 
 	$form->{'noArtist'} = Slim::Utils::Strings::string('NO_ARTIST');
 	$form->{'noAlbum'}  = Slim::Utils::Strings::string('NO_ALBUM');
-
-	my $Imports = Slim::Music::Import->importers;
-
-	for my $mixer (keys %{$Imports}) {
-
-		if (defined $Imports->{$mixer}->{'mixerlink'}) {
-			&{$Imports->{$mixer}->{'mixerlink'}}($self, $form, 0);
-		}
-	}
 }
 
 sub retrievePersistent {

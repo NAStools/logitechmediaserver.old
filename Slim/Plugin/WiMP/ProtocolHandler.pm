@@ -17,7 +17,7 @@ use Slim::Utils::Timers;
 
 my $prefs = preferences('server');
 my $log = Slim::Utils::Log->addLogCategory( {
-	'category'     => 'plugin.wimp',
+	'category'     => 'plugin.tidal',
 	'defaultLevel' => 'ERROR',
 	'description'  => 'PLUGIN_WIMP_MODULE_NAME',
 } );
@@ -54,7 +54,7 @@ sub new {
 	my $streamUrl = $song->streamUrl() || return;
 	my ($trackId, $format) = _getStreamParams( $args->{url} || '' );
 	
-	main::DEBUGLOG && $log->debug( 'Remote streaming WiMP track: ' . $streamUrl );
+	main::DEBUGLOG && $log->debug( 'Remote streaming TIDAL track: ' . $streamUrl );
 
 	my $sock = $class->SUPER::new( {
 		url     => $streamUrl,
@@ -106,53 +106,9 @@ sub _handleClientError {
 	
 	# Tell other clients to give up
 	$song->pluginData( abandonSong => 1 );
-
-	if ( $error =~ /UserLoggedOutException/ ) {
-	
-		_handleUserLoggedOutException($client);
-		return;
-	}
 	
 	$params->{errorCb}->($error);
 }
-
-sub _handleUserLoggedOutException {
-	my $client = shift;
-
-	main::DEBUGLOG && $log->debug("User got logged out from WiMP - probably logged in elsewhere. Stop playback on all players playing WiMP.");
-
-	my $userid;
-	if (main::SLIM_SERVICE) {
-		$userid = $client->playerData->userid;
-	}
-
-	foreach my $c ( Slim::Player::Client::clients() ) {
-
-		# On SN, only stop players on the current account
-		if (main::SLIM_SERVICE) {
-			next if $userid != $c->playerData->userid;
-		}
-
-		if ( $c->isPlaying && $c->playingSong()->track()->url =~ /^wimp/ ) {
-
-			Slim::Player::Source::playmode($c, 'stop');
-
-			my $line1 = $c->string('PLUGIN_WIMP_ERROR');
-			my $line2 = $c->string('PLUGIN_WIMP_ERROR_LOGGED_OUT');
-	
-			$c->showBriefly( {
-				line => [ $line1, $line2 ],
-				jive => { type => 'popupplay', text => [ $line2 ], duration => 5000},
-			}, {
-				scroll    => 1,
-				firstline => 1,
-				block     => 1,
-				duration  => 5,
-			} );
-		}
-	}
-}
-
 
 sub getNextTrack {
 	my ( $class, $song, $successCb, $errorCb ) = @_;
@@ -270,14 +226,6 @@ sub _gotTrack {
 			duration => $info->{duration} / 2,
 			url      => $params->{url},
 		};
-		
-		Slim::Utils::Timers::killTimers( $client, \&_reportPlayDuration );
-		Slim::Utils::Timers::setTimer(
-			$client,
-			time() + $params->{duration},
-			\&_reportPlayDuration,
-			$params
-		);
 	}
 }
 
@@ -289,48 +237,6 @@ sub _gotTrackError {
 	return if $params->{song}->pluginData('abandonSong');
 
 	_handleClientError( $error, $client, $params );
-}
-
-sub _reportPlayDuration {
-	my ( $client, $params ) = @_;
-	
-	my $url = $client->playingSong()->track()->url();
-	
-	# only report if we're still playing the same track
-	if ( $url && $url eq $params->{url} ) {
-		
-		main::DEBUGLOG && $log->is_debug && $log->debug("we're halfway through the track - reporting play duration");
-		
-		my $http = Slim::Networking::SqueezeNetwork->new(
-			sub {
-				my $http = shift;
-
-				my $content = $http->content;
-					
-				if ( $content =~ /UserLoggedOutException/ ) {
-					_handleUserLoggedOutException($client);
-				}
-					
-				main::DEBUGLOG && $log->is_debug && $log->debug('reportPlayDuration returned: ' . $content)
-			},
-			sub {
-				if ( main::DEBUGLOG && $log->is_debug ) {
-					my $http = shift;
-					$log->debug( 'reportPlayDuration failed: ' . $http->error );
-				}
-			},
-			{
-				client => $client,
-			},
-		);
-		
-		$http->get(
-			Slim::Networking::SqueezeNetwork->url(
-				'/api/wimp/v1/playback/reportPlayDuration?duration=' . $params->{duration}
-			)
-		);
-		
-	}
 }
 
 sub canDirectStreamSong {
@@ -353,6 +259,7 @@ sub parseHeaders {
 sub parseDirectHeaders {
 	my ( $class, $client, $url, @headers ) = @_;
 
+	# XXX - parse bitrate
 	#main::DEBUGLOG && $log->is_debug && $log->debug(Data::Dump::dump(@headers));
 	
 	my $isFlac  = grep m{Content.*audio/(?:x-|)flac}i, @headers;
@@ -367,8 +274,6 @@ sub parseDirectHeaders {
 # URL used for CLI trackinfo queries
 sub trackInfoURL {
 	my ( $class, $client, $url ) = @_;
-	
-	my $stationId;
 
 	my ($trackId) = _getStreamParams( $url );
 	
@@ -377,14 +282,11 @@ sub trackInfoURL {
 		'/api/wimp/v1/opml/trackinfo?trackId=' . $trackId
 	);
 	
-	if ( $stationId ) {
-		$trackInfoURL .= '&stationId=' . $stationId;
-	}
-	
 	return $trackInfoURL;
 }
 
 # Track Info menu
+=pod XXX - legacy track info menu from before Slim::Menu::TrackInfo times?
 sub trackInfo {
 	my ( $class, $client, $track ) = @_;
 	
@@ -405,6 +307,7 @@ sub trackInfo {
 	
 	$client->modeParam( 'handledTransition', 1 );
 }
+=cut
 
 # Metadata for a URL, used by CLI/JSON clients
 sub getMetadataFor {
@@ -543,46 +446,6 @@ sub getIcon {
 	my ( $class, $url ) = @_;
 
 	return Slim::Plugin::WiMP::Plugin->_pluginDataFor('icon');
-}
-
-# SN only, re-init upon reconnection
-sub reinit {
-	my ( $class, $client, $song ) = @_;
-	
-	# Reset song duration/progress bar
-	my $url = $song->track->url();
-	
-	main::DEBUGLOG && $log->is_debug && $log->debug("Re-init WiMP - $url");
-	
-	my $cache     = Slim::Utils::Cache->new;
-	my ($trackId) = _getStreamParams( $url );
-	my $meta      = $cache->get( 'wimp_meta_' . ($trackId || '') );
-	
-	if ( $meta ) {			
-		# Back to Now Playing
-		Slim::Buttons::Common::pushMode( $client, 'playlist' );
-	
-		# Reset song duration/progress bar
-		if ( $meta->{duration} ) {
-			$song->duration( $meta->{duration} );
-			
-			# On a timer because $client->currentsongqueue does not exist yet
-			Slim::Utils::Timers::setTimer(
-				$client,
-				Time::HiRes::time(),
-				sub {
-					my $client = shift;
-				
-					$client->streamingProgressBar( {
-						url      => $url,
-						duration => $meta->{duration},
-					} );
-				},
-			);
-		}
-	}
-	
-	return 1;
 }
 
 sub _getStreamParams {

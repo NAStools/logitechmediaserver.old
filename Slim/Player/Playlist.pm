@@ -456,7 +456,7 @@ sub removeMultipleTracks {
 		#check if this file meets all criteria specified
 		my $thisTrack = ${playList($client)}[$i];
 
-		if ($trackEntries{$thisTrack->url}) {
+		if (blessed($thisTrack) ? $trackEntries{$thisTrack->url} : $trackEntries{$thisTrack}) {
 
 			splice(@{playList($client)}, $i, 1);
 
@@ -608,6 +608,88 @@ sub moveSong {
 
 			refreshPlaylist($client);
 		}
+	}
+}
+
+# iterate over the current playlist to replace local file:// urls with volatile tmp:// versions
+sub makeVolatile {
+	my $client = shift;
+
+	require Slim::Player::Protocols::Volatile;
+	
+	$client = $client->master;
+		
+	# When shuffle is on, we'll have to deal with it separately. Track order won't be retained, 
+	# but at least the same track should play after the update:
+	#    1. set shuffle off
+	#    2. remember the position
+	#    3. add new tracks
+	#    4. restore position
+	#    5. shuffle again, preserving the currently playing track
+	my $shuffle = shuffle($client);
+	$client->execute([ 'playlist', 'shuffle', 0 ]) if $shuffle;
+	
+	my $needRestart;
+	
+	my @urls = map {
+		my $url = blessed($_) ? $_->url : $_;
+		
+		if ( $url =~ s/^file/tmp/ ) {
+			Slim::Schema->objectForUrl({
+				'url'      => $url,
+				'create'   => 1,
+				'readTags' => 1,
+			});
+			
+			Slim::Player::Protocols::Volatile->getMetadataFor($client, $url);
+			
+			$needRestart++;
+		}
+		
+		$url;
+	} @{playList($client)};
+	
+	# don't restart playback unless we've been playing local tracks
+	if ($needRestart) {
+		my $position = Slim::Player::Source::playingSongIndex($client);
+		my $cmd      = 'addtracks';
+		my $playtime;
+		my $restoreStateWhenShuffled = ['power', 0];
+		
+		if ($client->isPlaying()) {
+			$playtime = Slim::Player::Source::songTime($client);
+			
+			if ($shuffle) {
+				$restoreStateWhenShuffled = ['play', 0.2];
+			}
+			else {
+				$cmd = 'loadtracks';
+			}
+		}
+		elsif ($shuffle && $client->power) {
+			if ($client->isPaused) {
+				# XXX - pause somehow doesn't work...
+#				$restoreStateWhenShuffled = ['pause', 1];
+				$restoreStateWhenShuffled = ['stop'];
+			}
+			elsif ($client->isStopped) {
+				$restoreStateWhenShuffled = ['stop'];
+			}
+		}
+
+		Slim::Player::Playlist::stopAndClear($client);
+
+		$client->execute([ 'playlist', $cmd, 'listRef', \@urls, 0.2, $position ]);
+		
+		# restore shuffle state
+		if ($shuffle) {
+			# playlist addtracks wouldn't jump - need to do it here
+			$client->execute([ 'playlist', 'jump', $position ]);
+			$client->execute([ 'playlist', 'shuffle', $shuffle ]);
+			$client->execute($restoreStateWhenShuffled);
+		}
+		
+		Slim::Player::Source::gototime($client, $playtime) if $playtime;
 	}
 }
 

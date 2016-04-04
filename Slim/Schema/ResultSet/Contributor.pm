@@ -42,16 +42,18 @@ sub searchNames {
 sub countTotal {
 	my $self = shift;
 
+	my $prefs = preferences('server');
+
 	my $cond  = {};
 	my @joins = ();
-	my $roles = Slim::Schema->artistOnlyRoles;
+	my $roles = $prefs->get('useUnifiedArtistsList') ? Slim::Schema->artistOnlyRoles : [ Slim::Schema::Contributor->contributorRoleIds ];
 
 	# The user may not want to include all the composers / conductors
 	if ($roles) {
 		$cond->{'contributorAlbums.role'} = { 'in' => $roles };
 	}
 
-	if (preferences('server')->get('variousArtistAutoIdentification')) {
+	if ($prefs->get('useUnifiedArtistsList') && $prefs->get('variousArtistAutoIdentification')) {
 
 		$cond->{'album.compilation'} = [ { 'is' => undef }, { '=' => 0 } ];
 

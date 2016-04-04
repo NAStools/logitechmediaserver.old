@@ -51,16 +51,7 @@ sub tracks {
 sub displayAsHTML {
 	my ($self, $form, $descend, $sort) = @_;
 
-	$form->{'text'}       = $self->name;
-
-	my $Imports = Slim::Music::Import->importers;
-
-	for my $mixer (keys %{$Imports}) {
-
-		if (defined $Imports->{$mixer}->{'mixerlink'}) {
-			&{$Imports->{$mixer}->{'mixerlink'}}($self, $form, $descend);
-		}
-	}
+	$form->{'text'} = $self->name;
 }
 
 sub add {
@@ -76,7 +67,7 @@ sub add {
 	for my $genreSub (Slim::Music::Info::splitTag($genre)) {
 
 		my $namesort = Slim::Utils::Text::ignoreCaseArticles($genreSub);
-		my $namesearch = Slim::Utils::Text::ignoreCaseArticles($genreSub, 1);
+		my $namesearch = Slim::Utils::Text::ignoreCase($genreSub, 1);
 
 		# So that ucfirst() works properly.
 		use locale;

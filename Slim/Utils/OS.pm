@@ -71,11 +71,19 @@ sub initSearchPath {
 	# Initialise search path for findbin - called later in initialisation than init above
 
 	# Reduce all the x86 architectures down to i386, including x86_64, so we only need one directory per *nix OS. 
-	$class->{osDetails}->{'binArch'} = $Config::Config{'archname'};
+	my $binArch = $class->{osDetails}->{'binArch'} = $Config::Config{'archname'};
 	$class->{osDetails}->{'binArch'} =~ s/^(?:i[3456]86|x86_64)-([^-]+).*/i386-$1/;
 	
-	# Reduce ARM to arm-linux
-	if ( $class->{osDetails}->{'binArch'} =~ /^arm.*linux/ ) {
+	# Reduce ARM to arm(hf)-linux
+	if ( $class->{osDetails}->{'binArch'} =~ /^arm.*linux.*gnueabihf/ ||
+		($class->{osDetails}->{'binArch'} =~ /arm/ && (
+			$Config::Config{'lddlflags'} =~ /\-mfloat\-abi=hard/ ||
+			$Config::Config{'config_args'} =~ /\-mfloat\-abi=hard/
+		))
+	) {
+		$class->{osDetails}->{'binArch'} = 'armhf-linux';
+	}
+	elsif ( $class->{osDetails}->{'binArch'} =~ /^arm.*linux/ ) {
 		$class->{osDetails}->{'binArch'} = 'arm-linux';
 	}
 	
@@ -85,12 +93,20 @@ sub initSearchPath {
 	}
 
 	my @paths = ( catdir($class->dirsFor('Bin'), $class->{osDetails}->{'binArch'}), catdir($class->dirsFor('Bin'), $^O), $class->dirsFor('Bin') );
+
+	# Linux x86_64 should check its native folder first
+	if ( $binArch =~ s/^x86_64-([^-]+).*/x86_64-$1/ ) {
+		unshift @paths, catdir($class->dirsFor('Bin'), $binArch);
+	}
+	elsif ( $class->{osDetails}->{'binArch'} eq 'armhf-linux' ) {
+		push @paths, catdir($class->dirsFor('Bin'), 'arm-linux');
+	}
 	
 	Slim::Utils::Misc::addFindBinPaths(@paths);
 
 	# add path to Extension installer loaded plugins to @INC, NB this can only be done here as it requires Prefs to be loaded
 	# and the cachedir pref to be set before we can do it.  Prefs requires OSDetect so we can't do it at init time of OSDetect.
-	if (!main::SLIM_SERVICE && (my $cache = Slim::Utils::Prefs::preferences('server')->get('cachedir')) ) {
+	if ( my $cache = Slim::Utils::Prefs::preferences('server')->get('cachedir') ) {
 		unshift @INC, catdir($cache, 'InstalledPlugins');
 	}
 }
@@ -160,6 +176,8 @@ sub dirsFor {
 				$updateDir = catdir( Slim::Utils::Light::getPref('cachedir'), $dir );
 			};
 		}
+		
+		return unless $updateDir;
 		
 		mkdir $updateDir unless -d $updateDir;
 		push @dirs, $updateDir;
@@ -406,8 +424,20 @@ sub installerExtension { '' };
 sub installerOS { '' };
 
 # XXX - disable AutoRescan for all but SqueezeOS for now
-sub canAutoRescan { 0 };
+sub canAutoRescan { 0 }
 
+# can we use more memory to improve DB performance?
+sub canDBHighMem { 0 }
+
+# some systems support checking ACLs in addition to simpler file tests
+my $filetest;
+sub aclFiletest {
+	my ($class, $cb) = @_;
+	
+	$filetest = $cb if $cb;
+	
+	return $filetest;
+}
 
 =head2 directFirmwareDownload( )
 
@@ -422,20 +452,25 @@ Use this if you are running the server on low spec hardware or flash with limite
 sub directFirmwareDownload { 0 };
 
 
-=head2 restartServer( )
+=head2 restartServer( ) and canRestartServer
 
-The server can initiate a restart on some systems. 
-This should call main::cleanup() or stopServer() to cleanly shut down before restarting
+The server can initiate a restart on some systems.
+These methods must only be called from main::restartServer and
+main::canRestartServer which supervise other cleanup operations.
+
+The implementations of the methods are redefined in each of the
+OS implementations that can support the restart feature.
 
 =cut
 
-sub restartServer {
-	my $class = shift;
-	main::stopServer(1) if $class->canRestartServer();
-}
+sub restartServer { 0 }
 
-sub canRestartServer { 1 }
+sub canRestartServer { 0 }
 
 sub progressJSON { }
+
+sub runningFromSource {
+	$::REVISION =~ /^\s*\d+\s*$/ ? 0 : 1;
+}
 
 1;

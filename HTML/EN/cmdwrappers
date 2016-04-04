@@ -69,9 +69,15 @@
 		cmdimage = "b_queue.gif" -%]
 [%- END -%]
 
+[%- BLOCK morelink -%]
+	[%- PROCESS cmdlink
+		cmdtitle = "MORE"
+		cmdimage = "b_mmmix.gif" -%]
+[%- END -%]
+
 [%# this is to wrap around an href which drops down one more level when browsing multi-level lists (eg Shoutcast) %]
 [% BLOCK descendlink -%]
-<a [% content %]>[% "NEXT" | string %]</a>
+<a [% content %]>[% stringNEXT %]</a>
 [%- END %]
 
 [%# this is to wrap around an href which does a remove command, with default image reference %]
@@ -107,8 +113,8 @@
 [% END %]
 
 [%# this is a link to the home page %]
-[% BLOCK homelink; homeString = "HOME" | string;
-	"<a href=\"";webroot;"home.html?player=$playerURI\"" ; IF target; "target=\""; $target; "\""; END; ">"; img or homeString; "</a>";
+[% BLOCK homelink;
+	"<a href=\"";webroot;"home.html?player=$playerURI\"" ; IF target; "target=\""; $target; "\""; END; ">"; img or stringHOME; "</a>";
 END %]
 
 [%# this is to wrap around a link which moves something up a list %]
@@ -235,9 +241,6 @@ END %]
 	[% ELSE %]
 		[% WRAPPER playlink %][% PROCESS cmdHRef cmdType='play' %][% END %]
 		[% WRAPPER addlink  %][% PROCESS cmdHRef cmdType='add'  %][% END %]
-		[% FOREACH mixer = mixerlinks.values.sort -%]
-			[% PROCESS $mixer %]
-		[% END %]
 		[% PROCESS favoritescontrol %]
 	[%- END %]
 	
@@ -284,16 +287,29 @@ END %]
 		[% item.text | html %]
 	[% END %]
 	
-	[% IF item.includeArtist && item.itemobj.artist && item.itemobj.artist != item.noArtist; PROCESS artistsAsHTML.html itemobj = item.itemobj; END %]
+	[% IF item.includeArtist && (artist = item.artistsWithAttributes ? item.artistsWithAttributes.0 : item.itemobj.artist) && artist.name != item.noArtist; PROCESS artistsAsHTML.html itemobj = item.itemobj; END %]
 	
-	[% IF item.includeAlbum && item.itemobj.album && item.itemobj.album.title != item.noAlbum && item.itemobj.album.title != "" %][% "FROM" | string %]
-	<i><a [% PROCESS albumItemHRef %] target="browser" class="browseItemLink">[% item.itemobj.album.title | html %]</a></i>[% END %]
+	[% IF item.includeAlbum && (albumTitle = item.albumTitle || (item.itemobj.album && item.itemobj.album.title)) && albumTitle != item.noAlbum && albumTitle != "" %][% stringFROM %]
+	<a [% PROCESS albumItemHRef %] target="browser" class="browseItemLink">[% albumTitle | html %]</a>[% END %]
 	[% IF item.currentsong %]</b>[% END %]
 [% END %]
 
-[% BLOCK iteminfo -%]
-	[% PROCESS trackinfo %]
-[%- END %]
+[% BLOCK albuminfo %]
+	<a [% PROCESS albumItemHRef %] target="browser" class="browseItemLink">[% item.text | html %]</a>
+
+	[% IF item.showYear %]
+		<a [% PROCESS yearItemHRef %] class="browseItemLink">([% item.year %])</a>
+	[% END %]
+	
+	[% IF item.includeArtist && (artist = item.artistsWithAttributes ? item.artistsWithAttributes.0 : item.itemobj.artist) && artist.name != item.noArtist; PROCESS artistsAsHTML.html itemobj = item.itemobj; END %]
+[% END %]
+
+[% BLOCK iteminfo;
+	IF item.levelName == 'album';
+		PROCESS albuminfo;
+	ELSE;
+		PROCESS trackinfo;
+END; END %]
 
 [% BLOCK songInfoPlayLinks %]
 	<div id="songInfoPlayLinks">
@@ -304,7 +320,7 @@ END %]
 [% BLOCK songInfoItem %]
 	<div id="[% title %]">
 		<span class="songInfoTitle">
-			[% IF title; title | string; "COLON" | string; END %]
+			[% IF title; title | string; stringCOLON; END %]
 		</span>
 		<span class="songInfoText">[% item %]</span>
 	</div>
@@ -315,8 +331,8 @@ END %]
 [% BLOCK pagebar %]
 [%- IF NOT pageinfo.alphamap; PROCESS pagebarcalc pagesperbar = 15; END %]
 <div class="pagebar">
-[% IF pagesstart %]  <a href="[% pageinfo.path %]?start=0[% pageinfo.otherparams | html %][% IF sess %]&amp;sess=[% sess; END %]">[% "FIRST" | string %]</a> [% END %]
-[% IF pageprev || pageprev == '0' %] <a href="[% pageinfo.path %]?start=[% pageprev %][% pageinfo.otherparams | html %][% IF sess %]&amp;sess=[% sess; END %]">[% "PREVIOUS" | string %]</a> [% END %]
+[% IF pagesstart %]  <a href="[% pageinfo.path %]?start=0[% pageinfo.otherparams | html %][% IF sess %]&amp;sess=[% sess; END %]">[% stringFIRST %]</a> [% END %]
+[% IF pageprev || pageprev == '0' %] <a href="[% pageinfo.path %]?start=[% pageprev %][% pageinfo.otherparams | html %][% IF sess %]&amp;sess=[% sess; END %]">[% stringPREVIOUS %]</a> [% END %]
 [%- IF pageinfo.alphamap %]
 [%- FOREACH alphakey = pageinfo.alphaindex -%]
  [%- curpage = (pageinfo.alphamap.item(alphakey) == pageinfo.startitem) -%]
@@ -329,8 +345,8 @@ END %]
  [%- END %]
 [% END %]
 [%- END %]
-[% IF pagenext %] <a href="[% pageinfo.path %]?start=[% pagenext %][% pageinfo.otherparams | html %][% IF sess %]&amp;sess=[% sess; END %]">[% "NEXT" | string %]</a> [% END %]
-[% IF pagesend %] <a href="[% pageinfo.path %]?start=[% pagesend %][% pageinfo.otherparams | html %][% IF sess %]&amp;sess=[% sess; END %]">[% "LAST" | string %]</a> [% END %]
+[% IF pagenext %] <a href="[% pageinfo.path %]?start=[% pagenext %][% pageinfo.otherparams | html %][% IF sess %]&amp;sess=[% sess; END %]">[% stringNEXT %]</a> [% END %]
+[% IF pagesend %] <a href="[% pageinfo.path %]?start=[% pagesend %][% pageinfo.otherparams | html %][% IF sess %]&amp;sess=[% sess; END %]">[% stringLAST %]</a> [% END %]
 </div>
 [% END %]
 

@@ -9,6 +9,7 @@ use base 'Slim::Plugin::Base';
 
 use Slim::Utils::Prefs;
 use Slim::Control::XMLBrowser;
+use Slim::Web::ImageProxy qw(proxiedImage);
 
 if ( main::WEBUI ) {
  	require Slim::Web::XMLBrowser;
@@ -35,11 +36,8 @@ sub initPlugin {
 		*{$class.'::'.'type'}   = sub { $args{type} || 'link' };
 	}
 
-	if ( !main::SLIM_SERVICE ) {
-		if (!$class->_pluginDataFor('icon')) {
-
-			Slim::Web::Pages->addPageLinks("icons", { $class->getDisplayName => 'html/images/radio.png' });
-		}
+	if (!$class->_pluginDataFor('icon')) {
+		Slim::Web::Pages->addPageLinks("icons", { $class->getDisplayName => 'html/images/radio.png' });
 	}
 	
 	$class->initCLI( %args );
@@ -69,7 +67,7 @@ sub initJive {
 		}
 	}
 
-	my $icon = $class->_pluginDataFor('icon') ? $class->_pluginDataFor('icon') : 'html/images/radio.png';
+	my $icon = $class->_pluginDataFor('icon') ? proxiedImage($class->_pluginDataFor('icon')) : 'html/images/radio.png';
 	my $name = $class->getDisplayName();
 	
 	my @jiveMenu = ( {
@@ -192,7 +190,7 @@ sub cliRadiosQuery {
 	my ( $class, $args, $cli_menu ) = @_;
 	my $tag  = $args->{tag};
 
-	my $icon   = $class->_pluginDataFor('icon') ? $class->_pluginDataFor('icon') : 'html/images/radio.png';
+	my $icon   = $class->_pluginDataFor('icon') ? proxiedImage($class->_pluginDataFor('icon')) : 'html/images/radio.png';
 	my $weight = $class->weight;
 
 	return sub {
@@ -255,11 +253,6 @@ sub cliRadiosQuery {
 					},
 				};
 			}
-			
-			if ( main::SLIM_SERVICE ) {
-				# Bug 7110, icons are full URLs so we must use icon not icon-id
-				$data->{icon} = delete $data->{'icon-id'};
-			}
 		}
 		else {
 			my $type = $class->type;
@@ -281,18 +274,6 @@ sub cliRadiosQuery {
 		
 		# Exclude disabled plugins
 		my $disabled = $prefs->get('sn_disabled_plugins');
-		
-		if ( main::SLIM_SERVICE ) {
-			my $client = $request->client();
-			if ( $client && $client->playerData ) {
-				$disabled  = [ keys %{ $client->playerData->userid->allowedServices->{disabled} } ];
-			
-				# Hide plugins if necessary (private, beta, etc)
-				if ( !$client->canSeePlugin($tag) ) {
-					$data = {};
-				}
-			}
-		}
 		
 		if ( $disabled ) {
 			for my $plugin ( @{$disabled} ) {
@@ -324,7 +305,11 @@ sub webPages {
 	my $title = $class->getDisplayName();
 	my $url   = 'plugins/' . $class->tag() . '/index.html';
 	
-	Slim::Web::Pages->addPageLinks( $class->menu(), { $title => $url } );
+	# default location for plugins is 'plugins' in the web UI, but 'extras' in SP...
+	my $menu  = $class->menu();
+	$menu = 'plugins' if $menu eq 'extras';
+	
+	Slim::Web::Pages->addPageLinks( $menu, { $title => $url } );
 	
 	if ( $class->can('condition') ) {
 		Slim::Web::Pages->addPageCondition( $title, sub { $class->condition(shift); } );

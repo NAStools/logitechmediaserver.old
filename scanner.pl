@@ -28,14 +28,18 @@ use constant STATISTICS   => ( grep { /--nostatistics/ } @ARGV ) ? 0 : 1;
 use constant SB1SLIMP3SYNC=> 0;
 use constant IMAGE        => ( grep { /--noimage/ } @ARGV ) ? 0 : 1;
 use constant VIDEO        => ( grep { /--novideo/ } @ARGV ) ? 0 : 1;
+use constant MEDIASUPPORT => IMAGE || VIDEO;
 use constant WEBUI        => 0;
 use constant ISWINDOWS    => ( $^O =~ /^m?s?win/i ) ? 1 : 0;
 use constant ISMAC        => ( $^O =~ /darwin/i ) ? 1 : 0;
 use constant HAS_AIO      => 0;
+use constant LOCALFILE    => 0;
+use constant NOMYSB       => 1;
 
 # Tell PerlApp to bundle these modules
 if (0) {
 	require 'auto/Compress/Raw/Zlib/autosplit.ix';
+	require Cache::FileCache;
 }
 
 BEGIN {
@@ -74,12 +78,12 @@ use Slim::Utils::Prefs;
 use Slim::Music::Import;
 use Slim::Music::Info;
 use Slim::Music::PlaylistFolderScan;
+use Slim::Music::VirtualLibraries;
 use Slim::Player::ProtocolHandlers;
 use Slim::Utils::Misc;
 use Slim::Utils::OSDetect;
 use Slim::Utils::PluginManager;
 use Slim::Utils::Progress;
-use Slim::Utils::Scanner;
 use Slim::Utils::Strings qw(string);
 use Slim::Media::MediaFolderScan;
 
@@ -88,7 +92,7 @@ if ( INFOLOG || DEBUGLOG ) {
 	require Slim::Utils::PerlRunTime;
 }
 
-our $VERSION     = '7.7.5';
+our $VERSION     = '7.9.0';
 our $REVISION    = undef;
 our $BUILDDATE   = undef;
 
@@ -102,8 +106,8 @@ die $@ if $@;
 
 sub main {
 
-	our ($rescan, $playlists, $wipe, $force, $cleanup, $prefsFile, $priority);
-	our ($quiet, $dbtype, $logfile, $logdir, $logconf, $debug, $help, $nodebuglog, $noinfolog, $nostatistics, $noimages, $novideo);
+	our ($rescan, $playlists, $wipe, $force, $prefsFile, $priority);
+	our ($quiet, $dbtype, $logfile, $logdir, $logconf, $debug, $help);
 
 	our $LogTimestamp = 1;
 	
@@ -115,18 +119,19 @@ sub main {
 
 	GetOptions(
 		'force'        => \$force,
-		'cleanup'      => \$cleanup,
+		'cleanup'      => sub {},
 		'rescan'       => \$rescan,
 		'wipe'         => \$wipe,
 		'playlists'    => \$playlists,
+		# prefsdir parsed by Slim::Utils::Prefs
 		'prefsfile=s'  => \$prefsFile,
 		'pidfile=s'    => \$pidfile,
-		# prefsdir parsed by Slim::Utils::Prefs
-		'noimage'      => \$noimages,
-		'novideo'      => \$novideo,
-		'nodebuglog'   => \$nodebuglog,
-		'noinfolog'    => \$noinfolog,
-		'nostatistics' => \$nostatistics,
+		# these values are parsed separately, we don't need these values in a variable - just get them off the list
+		'noimage'      => sub {},
+		'novideo'      => sub {},
+		'nodebuglog'   => sub {},
+		'noinfolog'    => sub {},
+		'nostatistics' => sub {},
 		'progress'     => \$progress,
 		'priority=i'   => \$priority,
 		'logfile=s'    => \$logfile,
@@ -247,6 +252,8 @@ sub main {
 	
 	main::INFOLOG && $log->info("Cache init...");
 	Slim::Utils::Cache->init();
+	
+	Slim::Music::VirtualLibraries->init();
 
 	if ($playlists) {
 
@@ -262,6 +269,10 @@ sub main {
 	# Load any plugins that define import modules
 	# useCache is 0 so scanner does not modify the plugin cache file
 	Slim::Utils::PluginManager->init( 'import', 0 );
+
+	# need to re-init the strings, as plugins might have added new tokens
+	Slim::Utils::Strings::init();
+
 	Slim::Utils::PluginManager->load('import');
 
 	checkDataSource();
@@ -286,10 +297,6 @@ sub main {
 
 	# Flag the database as being scanned.
 	Slim::Music::Import->setIsScanning($scanType);
-
-	if ($cleanup) {
-		Slim::Music::Import->cleanupDatabase(1);
-	}
 
 	if ($wipe) {
 
@@ -341,15 +348,13 @@ sub main {
 
 			if ($changes) {
 				Slim::Music::Import->setLastScanTime;
+				Slim::Music::Import->setLastScanTimeIsDST();
 			}
 
 			# Notify server we are done scanning
 			$sqlHelperClass->afterScan();
 		}
 	}
-
-	# Wipe templates if they exist.
-	rmtree( catdir($prefs->get('cachedir'), 'templates') );
 	
 	# Cleanup after we're done, we can't rely on this being called from a sig handler
 	cleanup();
@@ -376,7 +381,7 @@ sub initializeFrameworks {
 
 	main::INFOLOG && $log->info("Server strings init...");
 
-	Slim::Utils::Strings::init(catdir($Bin,'strings.txt'), "EN");
+	Slim::Utils::Strings::init();
 
 	main::INFOLOG && $log->info("Server Info init...");
 
@@ -400,7 +405,6 @@ Usage: $0 [debug options] [--rescan] [--wipe]
 Command line options:
 
 	--force        Force a scan, even if we think a scan is already taking place.
-	--cleanup      Run a database cleanup job at the end of the scan
 	--rescan       Look for new files since the last scan.
 	--wipe         Wipe the DB and start from scratch
 	--playlists    Only scan files in your playlistdir.

@@ -43,7 +43,14 @@ sub resize {
 	
 	$debug      = $args{debug} if defined $args{debug};
 	
+	# if $file is a scalar ref, then it's the image data itself
+	if ( ref $file && ref $file eq 'SCALAR' ) {
+		$origref = $file;
+		$file    = undef;
+	}
+	
 	my ($offset, $length) = (0, 0); # used if an audio file is passed in
+	my $in_format;
 	
 	if ( $file && !-e $file ) {
 		die "Unable to resize from $file: File does not exist\n";
@@ -62,6 +69,12 @@ sub resize {
 				
 				$file = undef;
 			}
+			# sometimes we get an invalid offset, but Audio::Scan is able to read the image data anyway
+			# this is a workaround for this known bug: https://rt.cpan.org/Public/Bug/Display.html?id=95410
+			elsif ( !($in_format = _content_type_file($file, $offset, 'silent')) ) {
+				($offset, $length, $origref) = _read_data_from_tag($file);
+				$file = undef if $origref;
+			}
 		}
 	}
 	
@@ -69,7 +82,7 @@ sub resize {
 	my $explicit_format = $format;
 	
 	# Format of original image
-	my $in_format = $file ? _content_type_file($file, $offset) : _content_type($origref);
+	$in_format ||= $file ? _content_type_file($file, $offset) : _content_type($origref);
 	
 	# Ignore width/height of 'X'
 	$width  = undef if $width eq 'X';
@@ -78,13 +91,13 @@ sub resize {
 	# Short-circuit if no width/height specified, and formats match, return original image
 	if ( !$width && !$height ) {
 		if ( !$explicit_format || ($explicit_format eq $in_format) ) {
-			return $file ? (_slurp($file, $offset, $length), $in_format) : ($origref, $in_format);
+			return $file ? (_slurp($file, $length ? $offset : undef, $length || undef), $in_format) : ($origref, $in_format);
 		}
 	}
 	
 	# Abort if invalid params
 	if ( ($width && $width !~ /^\d+$/) || ($height && $height !~ /^\d+$/) ) {
-		return $file ? (_slurp($file, $offset, $length), $in_format) : ($origref, $in_format);
+		return $file ? (_slurp($file, $length ? $offset : undef, $length || undef), $in_format) : ($origref, $in_format);
 	}
 	
 	# Fixup bgcolor and convert from hex
@@ -134,7 +147,19 @@ sub resize {
 				$format = 'png';
 			}
 		}
-			
+
+		# requested size is larger than original - don't upscale
+		if ( $width > $in_width && $height > $in_height ) {
+			if ( $in_height / $in_width > 1 ) {
+				$height = $height * ($in_width / $width);
+				$width  = $in_width;
+			}
+			else {
+				$width  = $width * ($in_height / $height);
+				$height = $in_height;
+			}
+		}
+	
 		$debug && warn "Resizing from ${in_width}x${in_height} $in_format @ ${offset} to ${width}x${height} $format\n";
 		
 		$im->resize( {
@@ -169,6 +194,15 @@ sub resize {
 
 	else { # mode 'o', only use the width
 		$debug && warn "Resizing from ${in_width}x${in_height} $in_format @ ${offset} to ${width}xX $format\n";
+
+		if ( $width > $in_width && $height > $in_height ) {
+			if ( $in_height / $in_width > 1 ) {
+				$width = $width * ($in_height / $height);
+			}
+			else {
+				$width = $in_width;
+			}
+		}
 		
 		$im->resize( {
 			width => $width,
@@ -319,12 +353,19 @@ sub _read_tag {
 	
 	# We get here if the embedded image is either ID3 APIC with unsync null bytes, or a Vorbis base64 tag
 	# In this case we need to re-read the full artwork using Audio::Scan
+	
+	return _read_data_from_tag($file);
+}
+
+sub _read_data_from_tag {
+	my $file = shift;
+	
 	local $ENV{AUDIO_SCAN_NO_ARTWORK} = 0;
 	
-	$debug && warn "Offset information not found, re-reading file for direct artwork\n";
+	$debug && warn "Offset information not found or invalid, re-reading file for direct artwork\n";
 	
-	$s = Audio::Scan->scan_tags($file);
-	$tags = $s->{tags};
+	my $s = Audio::Scan->scan_tags($file);
+	my $tags = $s->{tags};
 	
 	# MP3, other files with ID3v2
 	if ( my $pic = $tags->{APIC} ) {
@@ -486,9 +527,10 @@ sub gdresize {
 		# XXX If cache is available, pull pre-cached size values from cache
 		# to see if we can use a smaller version of this image than the source
 		# to reduce resizing time.
-		
-		my ($ref, $format) = eval {
-			$class->resize(
+
+		my ($ref, $format);
+		eval {
+			($ref, $format) = $class->resize(
 				file    => $file,
 				width   => $width,
 				height  => $height,
@@ -497,6 +539,8 @@ sub gdresize {
 				format  => $ext,
 				debug   => $debug,
 			);
+			
+			$file = undef if ref $file;
 		};
 		
 		if ( $@ ) {
@@ -508,6 +552,8 @@ sub gdresize {
 			# XXX Don't cache images that aren't resized, i.e. /cover.jpg
 			_cache( $cache, $cachekey, $ref, $file, $format );
 		}
+
+		return ($ref, $format);
 	}
 }
 
@@ -516,7 +562,7 @@ sub _cache {
 	
 	my $cached = {
 		content_type  => $ct,
-		mtime         => (stat($file))[9],
+		mtime         => $file ? (stat($file))[9] : 0,
 		original_path => $file,
 		data_ref      => $imgref,
 	};

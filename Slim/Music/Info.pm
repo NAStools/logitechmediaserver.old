@@ -132,7 +132,7 @@ sub loadTypesConfig {
 					
 					foreach my $mimeType (@mimeTypes) {
 						next if ($mimeType eq '-');
-						$mimeTypes{$mimeType} = $type;
+						$mimeTypes{lc($mimeType)} = $type;
 					}
 
 					foreach my $slimType (@slimTypes) {
@@ -525,6 +525,18 @@ sub setCurrentTitle {
 	
 			# For some purposes, a change of title is a newsong...
 			Slim::Control::Request::notifyFromArray( $client, [ 'playlist', 'newsong', $title ] );
+		
+			# Bug 17174: Inform other players that may be listening to the same station
+			# We only do this if we have a client with this setCurrentTitle(),
+			# which will be the case for in-stream metadata.
+			foreach ( Slim::Player::Client::clients() ) {
+				next unless $_ && $_->controller() && $_->isPlaying();
+				next if $_ == $client;                   # Ignore the client above
+				next if Slim::Player::Sync::isSlave($_); # And only include masters of any sync-group
+				if ( (Slim::Player::Playlist::url($_) || '') eq $url ) {
+					Slim::Control::Request::notifyFromArray( $_, [ 'playlist', 'newsong', $title ] );
+				}
+			}
 		}
 
 		main::INFOLOG && $log->info("Setting title for $url to $title");	
@@ -678,8 +690,8 @@ sub standardTitle {
 	my $meta      = shift; # optional remote metadata to format
 	my $format    = shift; # caller may specify format 
 	
-	# Short-circuit if we have metadata or are on SN
-	if ( $meta || main::SLIM_SERVICE ) {
+	# Short-circuit if we have metadata
+	if ( $meta ) {
 		my $format = standardTitleFormat($client) || 'TITLE';
 		return displayText($client, undef, $format, $meta);
 	}
@@ -1117,6 +1129,26 @@ sub isRemoteURL {
 	return 0;
 }
 
+sub isVolatileURL {
+	my $url = shift || return 0;
+	
+	return 1 if $url =~ /^tmp:/;
+}
+
+sub isVolatile {
+	my $urlOrObj = shift || return 0;
+	
+	return 1 if isVolatileURL($urlOrObj);
+	
+	# $urlOrObj is a protocol handler
+	return 1 if $urlOrObj =~ /::/ && $urlOrObj->isa('Slim::Player::Protocols::Volatile');
+	
+	# $urlOrObj is a track object
+	return 1 if blessed($urlOrObj) && $urlOrObj->can('url') && isVolatileURL($urlOrObj->url);
+	
+	return 0;
+}
+
 # Only valid for the current playing song
 sub canSeek {
 	my ($client, $playingSong) = @_;
@@ -1245,6 +1277,9 @@ sub isSong {
 	if (!$type) {
 		$type = _isContentTypeHelper($pathOrObj, $type);
 	}
+	elsif ($type eq 'application/octet-stream') {
+		$type = _isContentTypeHelper($pathOrObj);
+	}
 
 	if ($type && $slimTypes{$type} && $slimTypes{$type} eq 'audio') {
 		return $type;
@@ -1318,10 +1353,10 @@ sub validTypeExtensions {
 
 	# XXX - these should be read from a shared source with Media::Scan
 	if ($findTypes eq 'image') {
-		@extensions = grep { !$disabled->{$_} } qw(jpg png gif bmp jpeg) if main::IMAGE;
+		@extensions = grep { !$disabled->{$_} } qw(jpg png gif bmp jpeg) if main::IMAGE && main::MEDIASUPPORT;
 	}
 	elsif ($findTypes eq 'video') {
-		@extensions = grep { !$disabled->{$_} } qw(asf avi divx flv hdmov m1v m2p m2t m2ts m2v m4v mkv mov mpg mpeg mpe mp2p mp2t mp4 mts pes ps ts vob webm wmv xvid 3gp 3g2 3gp2 3gpp mjpg) if main::VIDEO;
+		@extensions = grep { !$disabled->{$_} } qw(asf avi divx flv hdmov m1v m2p m2t m2ts m2v m4v mkv mov mpg mpeg mpe mp2p mp2t mp4 mts pes ps ts vob webm wmv xvid 3gp 3g2 3gp2 3gpp mjpg) if main::VIDEO && main::MEDIASUPPORT;
 	}
 	# audio files, playlists
 	else {
@@ -1416,7 +1451,7 @@ sub mimeToType {
 sub contentType { 
 	my $url = shift;
 
-	return Slim::Schema->contentType($url); 
+	return Slim::Schema->contentType($url) || '';
 }
 
 sub typeFromSuffix {

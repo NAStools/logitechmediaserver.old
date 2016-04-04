@@ -55,17 +55,12 @@ sub initPlugin {
 	
 	Slim::Plugin::Favorites::OpmlFavorites->migrate();
 	
-	if ( main::SLIM_SERVICE ) {
-		Slim::Utils::Favorites::registerFavoritesClassName('Slim::Plugin::Favorites::SqueezeNetwork');
+	if ( main::WEBUI ) {
+		Slim::Plugin::Favorites::Settings->new;
 	}
-	else {
-		if ( main::WEBUI ) {
-			Slim::Plugin::Favorites::Settings->new;
-		}
-		
-		# register opml based favorites handler
-		Slim::Utils::Favorites::registerFavoritesClassName('Slim::Plugin::Favorites::OpmlFavorites');
-	}
+	
+	# register opml based favorites handler
+	Slim::Utils::Favorites::registerFavoritesClassName('Slim::Plugin::Favorites::OpmlFavorites');
 
 	# register cli handlers
 	Slim::Control::Request::addDispatch(['favorites', 'items', '_index', '_quantity'], [0, 1, 1, \&cliBrowse]);
@@ -120,20 +115,13 @@ sub setMode {
 		return;
 	}
 	
-	my $url;
-	if ( main::SLIM_SERVICE ) {
-		use Slim::Networking::SqueezeNetwork;
-		$url = Slim::Networking::SqueezeNetwork->url( '/public/opml/' . $client->playerData->userid->emailHash . '/favorites.opml' );
-	}
-	else {
-		$url = Slim::Plugin::Favorites::OpmlFavorites->new($client)->fileurl;
-	}
+	my $opml = Slim::Plugin::Favorites::OpmlFavorites->new($client)->xmlbrowser;
 
 	# use INPUT.Choice to display the list of feeds
 	my %params = (
 		header   => 'PLUGIN_FAVORITES_LOADING',
 		modeName => 'Favorites.Browser',
-		url      => $url,
+		opml     => $opml,
 		title    => $client->string('FAVORITES'),
 	);
 
@@ -309,7 +297,7 @@ sub indexHandler {
 	# get the level to operate on - this is the level containing the index if action is set, otherwise the level specified by index
 	my ($level, $indexLevel, @indexPrefix) = $opml->level($params->{'index'}, defined $params->{'action'});
 
-	if (!defined $level || $params->{'action'} =~ /^play|^add/) {
+	if (!defined $level || $params->{'action'} =~ /^(?:play|add|insert)/) {
 
 		# favorites editor cannot follow remote links, so pass through to xmlbrowser as index does not appear to be edittable
 		# also pass through play/add to reuse xmlbrowser handling of playall etc
@@ -638,7 +626,8 @@ sub indexHandler {
 			'audio'   => (defined $opmlEntry->{'type'} && $opmlEntry->{'type'} =~ /audio|playlist/) ? 1 : 0,
 			'outline' => $opmlEntry->{'outline'},
 			'edit'    => (defined $edit && $edit == $i) ? 1 : 0,
-			'index'   => join '.', (@indexPrefix, $i++),
+			'index'   => join('.', (@indexPrefix, $i++)),
+			'icon'    => $opmlEntry->{'icon'},
 		};
 
 		if ($favs && $entry->{'url'}) {
@@ -718,14 +707,7 @@ sub cliBrowse {
 		return;
 	}
 	
-	my $feed;
-	if ( main::SLIM_SERVICE ) {
-		# Temporary 'coming soon' link until I rewrite favorites to use OPML
-		$feed = Slim::Networking::SqueezeNetwork->url( '/public/opml/' . $client->playerData->userid->emailHash . '/favorites.opml' );
-	}
-	else {
-		$feed = Slim::Plugin::Favorites::OpmlFavorites->new($client)->xmlbrowser;
-	}
+	my $feed = Slim::Plugin::Favorites::OpmlFavorites->new($client)->xmlbrowser;
 
 	Slim::Control::XMLBrowser::cliQuery('favorites', $feed, $request);
 }
@@ -782,42 +764,6 @@ sub cliAdd {
 	my $type   = $request->getParam('type');
 	my $parser = $request->getParam('parser');
 	my $hotkey = $request->getParam('hotkey');
-	
-	if ( main::SLIM_SERVICE ) {
-		# XXX: the below SC code should be refactored to use Slim::Utils::Favorites
-		# so this SN-specific code isn't necessary
-		my $favs = Slim::Utils::Favorites->new($client);
-		
-		if ( $command eq 'add' && defined $title && defined $url ) {
-
-			main::INFOLOG && $log->info("adding entry $title - $url");
-			
-			my $index = $favs->add( $url, $title );
-			
-			$request->addResult( 'count', 1 );
-			
-			$client->showBriefly( {
-				'jive' => { 
-					'text' => [
-						$client->string('FAVORITES_ADDING'),
-						$title,
-					],
-				},
-			} );
-			
-			# XXX temporary logging of favorites adds on SN for debugging
-			SDI::Service::EventLog->log(
-				$client, 'favorites_add', { url => $url, title => $title },
-			);
-
-			$request->setStatusDone();
-		}
-		else {
-			$request->setStatusBadParams();
-		}
-		
-		return;
-	}
 
 	my $favs = Slim::Plugin::Favorites::OpmlFavorites->new($client);
 
@@ -911,27 +857,20 @@ sub cliDelete {
 	my $index  = $request->getParam('item_id');
 	my $url    = $request->getParam('url');
 	my $title  = $request->getParam('title');
-	
-	if ( main::SLIM_SERVICE ) {
-		my $favs = Slim::Utils::Favorites->new($client);
-		
-		$favs->deleteUrl($url);
-	}
-	else {
-		# XXX: refactor to use Slim::Utils::Favorites
-		my $favs = Slim::Plugin::Favorites::OpmlFavorites->new($client);
 
-		if (!defined $index || !defined $favs->entry($index)) {
-			if ($url) {
-				$favs->deleteUrl($url);
-			} else {
-				$request->setStatusBadParams();
-				return;
-			}
+	# XXX: refactor to use Slim::Utils::Favorites
+	my $favs = Slim::Plugin::Favorites::OpmlFavorites->new($client);
+
+	if (!defined $index || !defined $favs->entry($index)) {
+		if ($url) {
+			$favs->deleteUrl($url);
+		} else {
+			$request->setStatusBadParams();
+			return;
 		}
-
-		$favs->deleteIndex($index);
 	}
+
+	$favs->deleteIndex($index);
 
 	# show feedback if this action came from jive cometd session
 	if ($request->source && $request->source =~ /\/slim\/request/) {
@@ -1031,7 +970,10 @@ sub _objectInfoHandler {
 	
 	my $index = Slim::Utils::Favorites->new($client)->findUrl($url);
 	
-	my $jive;
+	my $jive = {
+		style => ($client && $client->revision !~ /^7\.[0-7]/) ? 'item_fav' : 'itemNoAction'
+	};
+	
 	my $title;
 	if ($objectType eq 'artist') {
 		$title = $obj->name;

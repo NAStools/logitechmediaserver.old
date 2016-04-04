@@ -8,6 +8,7 @@ package Slim::Web::Pages::Common;
 # version 2.
 
 use strict;
+use File::Basename qw(basename);
 use File::ReadBackwards;
 use Scalar::Util qw(blessed);
 
@@ -39,6 +40,8 @@ sub init(){
 	Slim::Web::Pages->addPageFunction(qr/^tunein\.(?:htm|xml)/,\&tuneIn);
 	Slim::Web::Pages->addPageFunction(qr/^update_firmware\.(?:htm|xml)/,\&update_firmware);
 	
+	# cleanup potential left-overs from downloading ZIPped log files
+	Slim::Utils::Misc::deleteFiles(Slim::Utils::OSDetect::dirsFor('log'), qr/^(?:server|scanner).*zip$/i);
 }
 
 sub _lcPlural {
@@ -51,7 +54,7 @@ sub _lcPlural {
 }
 
 sub addLibraryStats {
-	my ($class, $params) = @_;
+	my ($class, $params, $client) = @_;
 	
 	if (!Slim::Schema::hasLibrary()) {
 		return;
@@ -85,7 +88,7 @@ sub addLibraryStats {
 		return;
 	}
 
-	my $totals = Slim::Schema->totals();
+	my $totals = Slim::Schema->totals($client);
 	$params->{'album_count'}  = $class->_lcPlural($totals->{'album'}, 'ALBUM', 'ALBUMS');
 	$params->{'song_count'}   = $class->_lcPlural($totals->{'track'}, 'SONG', 'SONGS');
 	$params->{'artist_count'} = $class->_lcPlural($totals->{'contributor'}, 'ARTIST', 'ARTISTS');
@@ -189,19 +192,6 @@ sub addSongInfo {
 
 			$params->{'download'} = sprintf('%smusic/%d/download', $params->{'webroot'}, $track->id);
 
-
-			my $Imports = Slim::Music::Import->importers;
-	
-			$params->{mixeritems} = { item => $params->{item} };	
-			for my $mixer (keys %{$Imports}) {
-			
-				if (defined $Imports->{$mixer}->{'mixerlink'}) {
-					
-					&{$Imports->{$mixer}->{'mixerlink'}}($track, $params->{mixeritems});
-
-				}
-			}
-			$params->{mixerlinks} = $params->{mixeritems}->{mixerlinks};
 		}
 	}
 }
@@ -455,24 +445,66 @@ sub tuneIn {
 }
 
 sub logFile {
-	my ($class, $params, $response, $logfile) = @_;
+	my ($class, $httpClient, $params, $response, $logfile) = @_;
+	
+	$logfile =~ s/log/server/;
+	$logfile .= 'LogFile';
+	
+	my $logFile = Slim::Utils::Log->$logfile;
+
+	if ( $params->{zip} && -f $logFile ) {
+		my $zip;
+
+		eval {
+			require Archive::Zip;
+
+			Archive::Zip::setErrorHandler( sub {
+				$log->error("Error compressing log file: " . shift);
+			} );
+			
+			$zip = Archive::Zip->new();
+		};
+		
+		if (defined $zip) {
+			# COMPRESSION_LEVEL_FASTEST == 1
+			my $member = $zip->addFile( $logFile, basename($logFile), 1 );
+			
+			my $zipFile = $logFile . '.zip';
+			
+			# AZ_OK == 0
+			if ( $member && $zip->writeToFileNamed( $zipFile ) == 0 ) {
+				$response->code(HTTP::Status::RC_OK);
+				Slim::Web::HTTP::sendStreamingFile( $httpClient, $response, 'application/zip', $zipFile  );
+				return;
+			}
+		}
+
+		$log->error("Error compressing log file using Archive::Zip $@ - returning uncompressed log file instead");
+		$params->{full} = 1;
+	}
+	
+	if ( $params->{full} && -f $logFile ) {
+		$response->code(HTTP::Status::RC_OK);
+		Slim::Web::HTTP::sendStreamingFile( $httpClient, $response, 'text/plain', $logFile );
+		return;
+	}
 
 	$response->header("Refresh" => "10; url=" . $params->{path} . ($params->{lines} ? '?lines=' . $params->{lines} : ''));
 	$response->header("Content-Type" => "text/plain; charset=utf-8");
 		
-	$logfile =~ s/log/server/;
-	$logfile .= 'LogFile';
-		
-	my $count = $params->{lines} || 50;
+	my $count = ($params->{lines} * 1) || 50;
 
 	my $body = '';
 
-	my $file = File::ReadBackwards->new(Slim::Utils::Log->$logfile);
+	my $file = File::ReadBackwards->new($logFile);
 		
 	if ($file){
 
 		my @lines;
 		while ( --$count && (my $line = $file->readline()) ) {
+			$line = "<span style=\"color:green\">$line<\/span>" if $line =~ /main::init.*Starting/;
+			$line =~ s/(error)\b/<span style="color:red">$1<\/span>/ig;
+			$line =~ s/(warn.*?)\b/<span style="color:orange">$1<\/span>/ig;
 			unshift (@lines, $line);
 		}
 		$body .= join('', @lines);
@@ -480,118 +512,7 @@ sub logFile {
 		$file->close();			
 	};		
 
-	return ("text/plain", \$body)
-}
-
-sub statusTxt {
-	my ($class, $client, $httpClient, $response, $params, $p) = @_;
-	
-	$response->header("Refresh" => "30; url=" . $params->{path});
-	$response->header("Content-Type" => "text/plain; charset=utf-8");
-
-	my $body;
-
-	if ( $params->{path} =~ /status/ ) {
-		# This code is deprecated. Jonas Salling is the only user
-		# anymore, and we're trying to move him to use the CLI.
-		buildStatusHeaders($client, $response, $p);
-
-		if (defined($client)) {
-			my $parsed = $client->curLines();
-			my $line1 = $parsed->{line}[0] || '';
-			my $line2 = $parsed->{line}[1] || '';
-			$body = $line1 . $Slim::Web::HTTP::CRLF . $line2 . $Slim::Web::HTTP::CRLF;
-		}
-	}
-
-	return ("text/plain", \$body)
-}
-
-sub buildStatusHeaders {
-	my ($client, $response, $p) = @_;
-
-	my %headers = ();
-	
-	if ($client) {
-
-		# send headers
-		%headers = ( 
-			"x-player"		=> $client->id(),
-			"x-playername"		=> $client->name(),
-			"x-playertracks" 	=> Slim::Player::Playlist::count($client),
-			"x-playershuffle" 	=> Slim::Player::Playlist::shuffle($client) ? "1" : "0",
-			"x-playerrepeat" 	=> Slim::Player::Playlist::repeat($client),
-		);
-		
-		if ($client->isPlayer()) {
-	
-			$headers{"x-playervolume"} = int($prefs->client($client)->get('volume') + 0.5);
-			$headers{"x-playermode"}   = Slim::Buttons::Common::mode($client) eq "power" ? "off" : Slim::Player::Source::playmode($client);
-	
-			my $sleep = $client->sleepTime() - Time::HiRes::time();
-
-			$headers{"x-playersleep"}  = $sleep < 0 ? 0 : int($sleep/60);
-		}	
-		
-		if ($client && Slim::Player::Playlist::count($client)) { 
-
-			my $track = Slim::Schema->objectForUrl(Slim::Player::Playlist::song($client));
-	
-			$headers{"x-playertrack"} = Slim::Player::Playlist::url($client); 
-			$headers{"x-playerindex"} = Slim::Player::Source::streamingSongIndex($client) + 1;
-			$headers{"x-playertime"}  = Slim::Player::Source::songTime($client);
-
-			if (blessed($track) && $track->can('artist')) {
-
-				my $i = $track->artist();
-				$i = $i->name() if ($i);
-				$headers{"x-playerartist"} = $i if $i;
-		
-				$i = $track->album();
-				$i = $i->title() if ($i);
-				$headers{"x-playeralbum"} = $i if $i;
-		
-				$i = $track->title();
-				$headers{"x-playertitle"} = $i if $i;
-		
-				$i = $track->genre();
-				$i = $i->name() if ($i);
-				$headers{"x-playergenre"} = $i if $i;
-
-				$i = $track->secs();				
-				$headers{"x-playerduration"} = $i if $i;
-
-				if ($track->cover) {
-					$headers{"x-playercoverart"} = "/music/" . $track->coverid . "/cover.jpg";
-				}
-			}
-		}
-	}
-
-	# include returned parameters if defined
-	if (defined $p) {
-		for (my $i = 0; $i < scalar @$p; $i++) {
-	
-			$headers{"x-p$i"} = $p->[$i];
-		}
-	}
-	
-	# simple quoted printable encoding
-	while (my ($key, $value) = each %headers) {
-
-		if (defined($value) && length($value)) {
-
-			if ($] > 5.007 && Slim::Utils::Unicode::encodingFromString($value) ne 'ascii') {
-
-				$value = Slim::Utils::Unicode::utf8encode($value, 'iso-8859-1');
-				
-				# XXX - did we previously import this from somewhere?
-				#$value = encode_qp($value);
-			}
-
-			$response->header($key => $value);
-		}
-	}
+	return ("text/html", \"<pre>$body</pre>");
 }
 
 sub statusM3u {
@@ -605,60 +526,5 @@ sub statusM3u {
 		};
 	}
 }
-
-
-# TODO: find where this is used?
-#sub anchor {
-#	my ($class, $item, $suppressArticles) = @_;
-#	
-#	if ($suppressArticles) {
-#		$item = Slim::Utils::Text::ignoreCaseArticles($item) || return '';
-#	}
-#
-#	return Slim::Utils::Text::matchCase(substr($item, 0, 1));
-#}
-
-
-# Build a simple header 
-#sub simpleHeader {
-#	my ($class, $args) = @_;
-#	
-#	my $itemCount    = $args->{'itemCount'};
-#	my $startRef     = $args->{'startRef'};
-#	my $headerRef    = $args->{'headerRef'};
-#	my $skinOverride = $args->{'skinOverride'};
-#	my $count		 = $args->{'perPage'} || $prefs->get('itemsPerPage');
-#	my $offset		 = $args->{'offset'} || 0;
-#
-#	my $start = (defined($$startRef) && $$startRef ne '') ? $$startRef : 0;
-#
-#	if ($start >= $itemCount) {
-#		$start = $itemCount - $count;
-#	}
-#
-#	$$startRef = $start;
-#
-#	my $end    = $start + $count - 1 - $offset;
-#
-#	if ($end >= $itemCount) {
-#		$end = $itemCount - 1;
-#	}
-#
-#	# Don't bother with a pagebar on a non-pagable item.
-#	if ($itemCount < $count) {
-#		return ($start, $end);
-#	}
-#
-#	$$headerRef = ${Slim::Web::HTTP::filltemplatefile("pagebarheader.html", {
-#		"start"        => $start,
-#		"end"          => $end,
-#		"itemcount"    => $itemCount - 1,
-#		'skinOverride' => $skinOverride
-#	})};
-#
-#	return ($start, $end);
-#}
-
-
 
 1;

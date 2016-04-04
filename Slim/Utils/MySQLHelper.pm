@@ -634,9 +634,12 @@ sub afterScan { }
 
 sub exitScan { }
 
+sub optimizeDB { }
+
 sub updateProgress { }
 
 sub postConnect { }
+sub addPostConnectHandler {}
 
 sub pragma { }
 

@@ -4,13 +4,16 @@ use strict;
 use Time::HiRes;
 use File::Spec::Functions qw(splitpath catdir);
 
-use Slim::Networking::SqueezeNetwork;
 use Slim::Utils::Log;
 use Slim::Utils::OSDetect;
 use Slim::Utils::Prefs;
 use Slim::Utils::Strings qw(string);
 use Slim::Utils::Timers;
 use Slim::Utils::Unicode;
+
+if (main::NOMYSB) {
+	require Slim::Networking::Repositories;
+}
 
 my $prefs = preferences('server');
 
@@ -24,12 +27,20 @@ my $os = Slim::Utils::OSDetect->getOS();
 my $versionFile;
 
 sub checkVersion {
+	my $cb = shift;
+	
 	# clean up old download location
-	Slim::Utils::Misc::deleteFiles($prefs->get('cachedir'), qr/^(?:Squeezebox|SqueezeCenter|LogitechMediaServer).*\.(pkg|dmg|exe)(\.tmp)?$/i);			
+	Slim::Utils::Misc::deleteFiles($prefs->get('cachedir'), qr/^(?:Squeezebox|SqueezeCenter|LogitechMediaServer).*\.(pkg|dmg|exe)(\.tmp)?$/i);
 
-	return unless $prefs->get('checkVersion');
+	Slim::Utils::Timers::killTimers(0, \&checkVersion);			
 
-	$versionFile = catdir( scalar($os->dirsFor('updates')), 'server.version' );
+	# don't check for updates when running from the source
+	if ($os->runningFromSource) {
+		main::INFOLOG && $log->is_info && $log->info("We're running from the source - don't check for updates");
+		return;
+	}
+	
+	return unless $prefs->get('checkVersion') || $cb;
 
 	my $installer = getUpdateInstaller() || '';
 	
@@ -46,7 +57,7 @@ sub checkVersion {
 
 	my $lastTime = $prefs->get('checkVersionLastTime');
 
-	if ($lastTime) {
+	if ($lastTime && !$cb) {
 
 		my $delta = Time::HiRes::time() - $lastTime;
 
@@ -66,24 +77,29 @@ sub checkVersion {
 
 	main::INFOLOG && $log->info("Checking version now.");
 
-	my $url = Slim::Networking::SqueezeNetwork->url(
-		sprintf(
-			"/update/?version=%s&revision=%s&lang=%s&geturl=%s&os=%s&uuid=%s&pcount=%d", 
-			$::VERSION, 
-			$::REVISION, 
-			Slim::Utils::Strings::getLanguage(),
-			$os->canAutoUpdate() && $prefs->get('autoDownloadUpdate') ? '1' : '0',
-			$os->installerOS(),
-			$prefs->get('server_uuid'),
-			Slim::Player::Client::clientCount(),
-		)
+	my $url = main::NOMYSB ? (Slim::Networking::Repositories->getUrlForRepository('servers') . "$::VERSION/servers.xml") : (Slim::Networking::SqueezeNetwork->url('') . '/update/');
+	
+	$url .= sprintf(
+		"?version=%s&revision=%s&lang=%s&geturl=%s&os=%s&uuid=%s&pcount=%d", 
+		$::VERSION, 
+		$::REVISION, 
+		Slim::Utils::Strings::getLanguage(),
+		$os->canAutoUpdate() && $prefs->get('autoDownloadUpdate') ? '1' : '0',
+		$os->canAutoUpdate() ? $os->installerOS() : '',
+		$prefs->get('server_uuid'),
+		Slim::Player::Client::clientCount(),
 	);
 	
 	main::DEBUGLOG && $log->debug("Using URL: $url");
 	
-	my $http = Slim::Networking::SqueezeNetwork->new(\&checkVersionCB, \&checkVersionError);
-
-	# will call checkVersionCB when complete
+	my $params = {
+		cb => $cb
+	};
+	
+	my $http = main::NOMYSB 
+		? Slim::Networking::SimpleAsyncHTTP->new(\&checkVersionCB, \&checkVersionError, $params)
+		: Slim::Networking::SqueezeNetwork->new(\&checkVersionCB, \&checkVersionError, $params);
+		
 	$http->get($url);
 
 	$prefs->set('checkVersionLastTime', Time::HiRes::time());
@@ -93,15 +109,46 @@ sub checkVersion {
 # called when check version request is complete
 sub checkVersionCB {
 	my $http = shift;
-	
-	# Ignore update check results for users running from svn
-	return if $::REVISION eq 'TRUNK';
+	my $cb = $http->params('cb');
+
+	my $version;
 
 	# store result in global variable, to be displayed by browser
 	if ($http->code =~ /^2\d\d/) {
 
-		my $version = Slim::Utils::Unicode::utf8decode( $http->content() );
-		chomp($version);
+		my $content = Slim::Utils::Unicode::utf8decode( $http->content() );
+		
+		# Update checker logic is hosted on mysb.com. Once this is gone, we'll have to deal with it on our own.
+		if (main::NOMYSB) {
+			require XML::Simple;
+			my $versions = XML::Simple::XMLin($content);
+			
+			my $osID = $os->installerOS() || 'default';
+			
+			main::DEBUGLOG && $log->is_debug && $log->debug("Got list of installers:\n" . Data::Dump::dump($versions));
+			
+			if ( my $update = $versions->{ $osID } ) {
+				if ( $update->{version} && $update->{revision} ) {
+					if ( Slim::Utils::Versions->compareVersions($update->{version}, $::VERSION) > 0 || $update->{revision} > $::REVISION ) {
+						if ( $osID ne 'default' && $prefs->get('autoDownloadUpdate') ) {
+							$version = $update->{url};
+							
+							# prepend URL with our download host if we didn't get an absolute URL
+							$version = Slim::Networking::Repositories->getUrlForRepository('servers') . $version unless $version =~ /^http/;
+						}
+						else {
+							$version = Slim::Utils::Strings::string('SERVER_UPDATE_AVAILABLE', $update->{version}, $update->{url});
+						}
+					}
+				}
+			}
+		}
+		else {
+			chomp($content);
+			$version = $content;
+		}
+		
+		$version ||= 0;
 		
 		main::DEBUGLOG && $log->debug($version || 'No new Logitech Media Server version available');
 
@@ -115,7 +162,7 @@ sub checkVersionCB {
 			getUpdate($version);
 		}
 		
-		# if we got an update mit download URL, display it in the web UI et al.
+		# if we got an update with download URL, display it in the web UI et al.
 		elsif ($version && $version =~ /a href=/i) {
 			$::newVersion = $version;
 		}
@@ -124,14 +171,13 @@ sub checkVersionCB {
 		$::newVersion = 0;
 		$log->warn(sprintf(Slim::Utils::Strings::string('CHECKVERSION_PROBLEM'), $http->code));
 	}
+	
+	$cb->($version) if $cb && ref $cb;
 }
 
 # called only if check version request fails
 sub checkVersionError {
 	my $http = shift;
-	
-	# Ignore update check results for users running from svn
-	return if $::REVISION eq 'TRUNK';
 
 	my $proxy = $prefs->get('webproxy');
 
@@ -146,7 +192,7 @@ sub checkVersionError {
 sub getUpdate {
 	my $url = shift;
 	
-	my $params = $os->getUpdateParams();
+	my $params = $os->getUpdateParams($url);
 	
 	return unless $params;
 	
@@ -175,7 +221,7 @@ sub getUpdate {
 		if ( -e $file ) {
 			main::INFOLOG && $log->info("We already have the latest installer file: $file");
 			
-			setUpdateInstaller($file);
+			setUpdateInstaller($file, $params->{cb});
 			return;
 		}
 		
@@ -183,7 +229,7 @@ sub getUpdate {
 
 		setUpdateInstaller();
 		
-		$log->debug("Downloading...\n   URL:      $url\n   Save as:  $tmpFile\n   Filename: $file");
+		main::DEBUGLOG && $log->is_debug && $log->debug("Downloading...\n   URL:      $url\n   Save as:  $tmpFile\n   Filename: $file");
 
 		# Save to a tmp file so we can check SHA
 		my $download = Slim::Networking::SimpleAsyncHTTP->new(
@@ -208,7 +254,7 @@ sub downloadAsyncDone {
 	
 	my $file    = $http->params('file');
 	my $tmpFile = $http->params('saveAs');
-	my $params  = $http->params('params');
+	my $params  = $http->params('params') || {};
 	
 	my $path    = $params->{'path'};
 	
@@ -226,12 +272,12 @@ sub downloadAsyncDone {
 
 	cleanup($path);
 
-	$log->info("Successfully downloaded update installer file '$tmpFile'. Saving as $file");
+	main::INFOLOG && $log->is_info && $log->info("Successfully downloaded update installer file '$tmpFile'. Saving as $file");
 	unlink $file;
 	my $success = rename $tmpFile, $file;
 	
 	if (-e $file) {
-		setUpdateInstaller($file) ;
+		setUpdateInstaller($file, $params->{cb}) ;
 	}
 	elsif (!$success) {
 		$log->warn("Renaming '$tmpFile' to '$file' failed.");
@@ -239,16 +285,14 @@ sub downloadAsyncDone {
 	else {
 		$log->warn("There was an unknown error downloading/storing the update installer.");
 	}
-	
-	if ($params && ref($params->{cb}) eq 'CODE') {
-		$params->{cb}->($file);
-	}
 
 	cleanup($path, 'tmp');
 }
 
 sub setUpdateInstaller {
-	my $file = shift;
+	my ($file, $cb) = @_;
+	
+	$versionFile ||= getVersionFile();
 	
 	if ($file && open(UPDATEFLAG, ">$versionFile")) {
 		
@@ -256,6 +300,12 @@ sub setUpdateInstaller {
 		
 		print UPDATEFLAG $file;
 		close UPDATEFLAG;
+
+		if ($cb && ref($cb) eq 'CODE') {
+			$cb->($file);
+		}
+		
+		$::newVersion ||= string('SERVER_UPDATE_AVAILABLE_SHORT');
 	}
 	
 	elsif ($file) {
@@ -269,15 +319,22 @@ sub setUpdateInstaller {
 	}
 }
 
+sub getVersionFile {
+	$versionFile ||= catdir( scalar($os->dirsFor('updates')), 'server.version' );
+	return $versionFile;
+}
+
 
 sub getUpdateInstaller {
 	
 	return unless $prefs->get('autoDownloadUpdate');
 	
-	main::DEBUGLOG && $log->debug("Reading update installer path from $versionFile");
+	$versionFile ||= getVersionFile();
+	
+	main::DEBUGLOG && $log->is_debug && $log->debug("Reading update installer path from $versionFile");
 	
 	open(UPDATEFLAG, $versionFile) || do {
-		$log->debug("No '$versionFile' available.");
+		main::DEBUGLOG && $log->is_debug && $log->debug("No '$versionFile' available.");
 		return '';	
 	};
 	
@@ -307,8 +364,7 @@ sub installerIsUpToDate {
 
 	my $installer = shift || '';
 
-	return ( $::REVISION eq 'TRUNK'											# we'll consider TRUNK to always be up to date
-		|| ($installer =~ /$::REVISION/ && $installer =~ /$::VERSION/) )	# same revision and revision
+	return ( $installer =~ /$::REVISION/ && $installer =~ /$::VERSION/ );	# same revision and revision
 }
 
 sub cleanup {

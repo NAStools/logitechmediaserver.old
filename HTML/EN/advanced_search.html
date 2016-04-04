@@ -1,25 +1,52 @@
-[% IF browse_items.size %]
-	[% extJsScripts = BLOCK %]
-	<script TYPE="text/javascript">
-		Ext.onReady(function(){
-			var el = Ext.get('advLink');
-			if (el) {
-				var link = el.dom.href;
-				el.dom.href='javascript:void(0);';
-				el.on('click', function(){ 
-					var f = Ext.get('advSearchForm');
+[% extJsScripts = BLOCK %]
+<script TYPE="text/javascript">
+	Ext.onReady(function() {
+		[% IF browse_items.size %]
+		var el = Ext.get('advLink');
+		if (el) {
+			var link = el.dom.href;
+			el.dom.href='javascript:void(0);';
+			el.on('click', function(){ 
+				var f = Ext.get('advSearchForm');
+				
+				if (f.isVisible())
+					location = link;
+				else {
+					f.show();
 					
-					if (f.isVisible())
-						location = link;
-					else {
-						f.show();
-						SqueezeJS.UI.ScrollPanel.init();
-					} 
-				})
-			}
-		});
-	</script>
-	[% END %]
+					SqueezeJS.UI.ScrollPanel.offset2 += f.getHeight();
+					SqueezeJS.UI.ScrollPanel.init();
+				} 
+			});
+		}
+		
+		// advanced search somehow ends up with two scrolling panels - override default ScrollPanel
+		if ( ((el = Ext.get('content')) && el.hasClass('scrollingPanel')) ) {
+			var sp = SqueezeJS.UI.ScrollPanel;
+			
+			sp.el2 = el;
+			
+			// where is this value coming from? We shouldn't need to hard-code it
+			sp.offset2 = -18;
+			
+			if (el = Ext.get('infoTab'))
+				sp.offset2 += el.getHeight();
+			
+			if (el = Ext.get('pagebar'))
+				sp.offset2 += el.getHeight();
+
+			sp.onResize = function() {
+				this.el.setHeight( Ext.fly(document.body).getViewSize().height - this.offset );
+				this.el2.setHeight( Ext.fly(document.body).getViewSize().height - this.offset + this.offset2 );
+			};
+
+			sp.onResize();
+		}
+		[% END %]
+		
+		LiveSearch.init();
+	});
+</script>
 [% END %]
 [% pagetitle = 'ADVANCEDSEARCH' | string %]
 [% pageicon = icons.SEARCHMUSIC %]
@@ -34,6 +61,10 @@
 		<option [% IF $name == "<" %]selected[% END %] value="&lt;" >[% "LESSTHAN" | string %]</option>
 		<option [% IF $name == ">" %]selected[% END %] value="&gt;" >[% "GREATERTHAN" | string %]</option>
 		<option [% IF $name == "!=" %]selected[% END %] value="!=" >[% "NOT" | string %]</option>
+		[% IF withRange %]
+		<option [% IF $name == "BETWEEN" %]selected[% END %] value="BETWEEN" >[% "RANGE" | string %]</option>
+		<option [% IF $name == "NOT BETWEEN" %]selected[% END %] value="NOT BETWEEN" >[% "NOT_IN_RANGE" | string %]</option>
+		[% END %]
 	</select>
 [% END %]
 
@@ -44,13 +75,17 @@
 		<option [% IF $name == "=" %]selected[% END %] value="=" >[% "IS" | string %]</option>
 		<option [% IF $name == "<" %]selected[% END %] value="&lt;" >[% "BEFORE" | string %]</option>
 		<option [% IF $name == ">" %]selected[% END %] value="&gt;" >[% "AFTER" | string %]</option>
+		[% IF withRange %]
+		<option [% IF $name == "BETWEEN" %]selected[% END %] value="BETWEEN" >[% "RANGE" | string %]</option>
+		<option [% IF $name == "NOT BETWEEN" %]selected[% END %] value="NOT BETWEEN" >[% "NOT_IN_RANGE" | string %]</option>
+		[% END %]
 	</select>
 [% END %]
 
-[% BLOCK  field %]
+[% BLOCK field %]
 	<tr>
-		<td class="content" align="right" valign="middle" width="30%">[% title | string %]&nbsp;</td>
-		<td class="content" align="left" valign="middle" width="70%">
+		<td class="content" align="right" valign="middle" style="vertical-align: middle" width="30%">[% title | string %]&nbsp;</td>
+		<td class="content" align="left" valign="middle" style="vertical-align: middle" width="70%">
 		  [% content %]
 		</td>
 	</tr>
@@ -58,38 +93,66 @@
 [% END %]
 	<form action="advanced_search.html" method="GET" name="searchForm" id="advSearchForm" [% IF resultClass || browse_items.size %]class="[% resultClass || "resultsPage" %]"[% END %]><br>
 	<input type="hidden" value="[% player %]" name="player">
+	<input type="hidden" value="" name="action">
 
 	<table class="border" border="0" cellpadding="3" cellspacing="1" width="100%">
 		<tbody>
+
+[% IF searches.size %]
+	<tr>
+		<td>&nbsp;</td>
+		<td class="content" align="left" valign="middle" style="vertical-align: middle" width="70%">
+			<select name="savedSearch" onchange='this.form.action.value = "loadSaved"; this.form.submit()'>
+				<option value="">[% "SAVED_SEARCH" | string | html %]</option>
+				[%- FOREACH saved = searches -%]
+					<option value="[% saved %]" [% IF savedSearch == saved %]selected="selected"[% END %]>[% saved | html %]</option>
+				[% END -%]
+			</select>
+			[% IF savedSearch %]<input value="[% "DELETE" | string %]" name="deleteSavedSearch" type="button" onclick='this.form.action.value = "deleteSaved"; this.form.submit()'>[% END %]
+		</td>
+	</tr>
+[% END %]
 
 [% WRAPPER field title='TRACK' %]
 	<input name="search.me_titlesearch" value="[% search.me_titlesearch.value | html %]" size="[% size %]" maxlength="100" type="text">
 [% END %]
 
-[% WRAPPER field title='ARTIST' %]
+<tr>
+	<td class="content" align="right" valign="top" style="vertical-align: top; padding-top: 2px" width="30%">[% "ARTIST" | string %]&nbsp;</td>
+	<td class="content" align="left" valign="middle" style="vertical-align: middle" width="70%">
 	<input name="search.contributor_namesearch" value="[% search.contributor_namesearch.value | html %]" size="[% size %]" maxlength="100" type="text">
-[% END %]
+	<table>
+		[% FOREACH role = roles.keys.sort %]
+			[% IF loop.count % 2 > 0 %]<tr>[% END %]
+			<td><input type="checkbox" name="search.contributor_namesearch.active[% role %]" value="1" [% val = "active" _ role; IF search.contributor_namesearch.$val %]checked="checked"[% END %]>&nbsp;[% roles.$role | string %]&nbsp;&nbsp;</td>
+			[% IF loop.last OR loop.count+1 % 2 == 0 %]</tr>[% END %]
+		[% END %]
+	</table>
+	</td>
+</tr>
 
 [% WRAPPER field title='ALBUM' %]
 	<input name="search.album_titlesearch" value="[% search.album_titlesearch.value | html %]" size="[% size %]" maxlength="100" type="text">
 [% END %]
 
 [% WRAPPER field title='GENRE' %]
-	<select name="search.genre">
+	<select name="search.genre" id="genre" onchange="document.getElementById('genre_name_input').disabled = (this.value >= 0)">
 		<option value="">[% "ANY_GENRE" | string %]</option>
+		<option value="-1" [% IF search.genre.value == -1 %]selected[% END %]>- [% "TEXTSEARCH" | string %]</option>
+		<option value="-2" [% IF search.genre.value == -2 %]selected[% END %]>- [% "NOT_IN_TEXTSEARCH" | string %]</option>
 
 		[%- WHILE (genre = genres.next) -%]
 			[%- NEXT IF NOT genre.name -%]
 			<option value="[% genre.id %]" [% IF search.genre.value == genre.id %]selected[% END %]>[% genre.name | html %]</option>
 		[% END -%]
-	</select>
+	</select><br>
+	<input name="search.genre_name" value="[% search.genre_name.value | html %]" size="[% size %]" maxlength="1000" type="text" id="genre_name_input" [% IF NOT search.genre.value < 0 %]disabled="disabled"[% END %]>
 [% END %]
 
 [% WRAPPER field title='LENGTH' %]
-	[% logicalSelectionBlock(name='search.secs.op') %]
+	[% logicalSelectionBlock(name='search.secs.op', withRange=1) %]
 
-	<input name="search.secs" value="[% search.secs.value %]" size="4" maxlength="4" style="text-align: right;" type="text">
-	[% "SECONDS" | string %]
+	<input name="search.secs" value="[% search.secs.value %]" size="10" maxlength="10" style="text-align: right;" type="text" placeholder="[% "SECONDS" | string %]">
 [% END %]
 
 [% WRAPPER field title='TRACK' %]
@@ -99,16 +162,27 @@
 [% END %]
 
 [% WRAPPER field title='YEAR' %]
-	[% timeSelectionBlock(name='search.year.op') %]
+	[% timeSelectionBlock(name='search.year.op', withRange=1) %]
 
-	<input name="search.year" value="[% search.year.value %]" size="4" maxlength="4" style="text-align: right;" type="text">
+	<input name="search.year" value="[% search.year.value %]" size="10" maxlength="10" style="text-align: right;" type="text">
 [% END %]
+
+[% IF statistics; WRAPPER field title='PLAYCOUNT' %]
+	[% logicalSelectionBlock(name='search.persistent_playcount.op', withRange=1) %]
+
+	<input name="search.persistent_playcount" value="[% search.persistent_playcount.value %]" size="10" maxlength="10" style="text-align: right;" type="text">
+[% END; END %]
+
+[% IF statistics; WRAPPER field title='RATING' %]
+	[% logicalSelectionBlock(name='search.persistent_rating.op', withRange=1) %]
+
+	<input name="search.persistent_rating" value="[% search.persistent_rating.value %]" size="10" maxlength="10" style="text-align: right;" type="text">
+[% END; END %]
 
 [% WRAPPER field title='MODTIME' %]
 	[% timeSelectionBlock(name='search.timestamp.op') %]
 
-	<input name="search.timestamp" value="[% search.timestamp.value %]" size="10" maxlength="10" type="text">
-	&nbsp; [% "EXAMPLE_SHORT" | string %] mm/dd/yyyy
+	<input name="search.timestamp" value="[% search.timestamp.value %]" size="10" maxlength="10" type="text" placeholder="mm/dd/yyyy">
 [% END %]
 
 [% WRAPPER field title='BITRATE' %]
@@ -118,29 +192,35 @@
 		<option value="">[% "ANY_VALUE" | string %]</option>
 
 		[% FOREACH bitRate = [ 32 40 48 56 64 80 96 112 128 160 192 224 256 320 ] %]
-			<option value="[% bitRate %]" [% IF search.bitrate.value == bitRate %]selected[% END %]>[% bitRate %]</option>
+			<option value="[% bitRate %]" [% IF search.bitrate.value == bitRate %]selected[% END %]>[% bitRate %] [% "KBPS" | string %]</option>
 		[%- END %]
 
-	</select> [% "KBPS" | string %]
+	</select>
 [% END %]
 
-<!--
-	<tr>
-		<td class="content" align="right" valign="middle" width="30%">[% 'SAMPLERATE' | string %]&nbsp;</td>
-		<td class="content" align="left" valign="middle" width="70%">
+[% IF samplerates.size; WRAPPER field title='SAMPLERATE' %]
+	[% logicalSelectionBlock(name='search.samplerate.op') %]
 
-			[% logicalSelectionBlock(name='search.samplerate.op') %]
+	<select name="search.samplerate">
+		<option value="">[% "ANY_VALUE" | string %]</option>
 
-			<select name="search.samplerate">
-				<option value="">[% "ANY_VALUE" | string %]</option>
+		[% FOREACH sampleRate = samplerates %]
+			<option value="[% sampleRate %]" [% IF search.samplerate.value == sampleRate %]selected[% END %]>[% (sampleRate / 1000) | format('%.1f') %] kHz</option>
+		[% END %]
+	</select>
+[% END; END %]
 
-				[% FOREACH sampleRate = [ 32000 44100 ] %]
-					<option value="[% sampleRate %]">[% sampleRate %]</option>
-				[% END %]
-			</select> kHz
-<				/td>
-	</tr>
--->
+[% IF samplesizes.size; WRAPPER field title='SAMPLESIZE' %]
+	[% logicalSelectionBlock(name='search.samplesize.op') %]
+
+	<select name="search.samplesize">
+		<option value="">[% "ANY_VALUE" | string %]</option>
+
+		[% FOREACH sampleSize = samplesizes %]
+			<option value="[% sampleSize %]" [% IF search.samplesize.value == sampleSize %]selected[% END %]>[% sampleSize %] [% "BITS" | string %]</option>
+		[% END %]
+	</select>
+[% END; END %]
 
 [% IF fileTypes %]
 	[% WRAPPER field title='TYPE' %]
@@ -155,31 +235,40 @@
 [% END %]
 
 [% WRAPPER field title='FILELENGTH' %]
-	[% logicalSelectionBlock(name='search.filesize.op') %]
+	[% logicalSelectionBlock(name='search.filesize.op', withRange=1) %]
 
-	<input name="search.filesize" value="[% search.filesize.value %]" size="12" maxlength="12" style="text-align: right;" type="text">
-	[% "BYTES" | string %]
+	<input name="search.filesize" value="[% search.filesize.value %]" size="10" maxlength="30" style="text-align: right;" type="text" placeholder="[% "BYTES" | string %]">
 [% END %]
 
-	<tr>
-		<td class="content" align="right" nowrap="nowrap" valign="middle" width="25%">[% "COMMENT" | string %]&nbsp;</td>
-		<td class="content" align="left" valign="middle" width="75%">
-			<input name="search.comments_value" value="[% search.comments_value.value %]" size="[% size %]" maxlength="1000" type="text">
-		</td>
-	</tr>
+[% WRAPPER field title='COMMENT' %]
+	<input name="search.comments_value" value="[% search.comments_value.value %]" size="[% size %]" maxlength="1000" type="text">
+[% END %]
 
+[% WRAPPER field title='LYRICS' %]
+	<input name="search.lyrics" value="[% search.lyrics.value %]" size="[% size %]" maxlength="1000" type="text">
+[% END %]
+
+[% IF browse_items.size %]
 	<tr>
-		<td class="content" align="right" nowrap="nowrap" valign="middle" width="25%">[% "LYRICS" | string %]&nbsp;</td>
-		<td class="content" align="left" valign="middle" width="75%">
-		  <input name="search.lyrics" value="[% search.lyrics.value %]" size="[% size %]" maxlength="1000" type="text">
+		<td class="content" align="right" valign="middle" style="vertical-align: middle" width="30%"><br>[% "SAVE_AS" | string %]&nbsp;</td>
+		<td class="content" align="left" valign="middle" style="vertical-align: middle" width="70%">
+			<br>
+			<input name="saveSearch" value="[% saveSearch | html %]" size="[% size / 2.5 %]" maxlength="100" type="text">
+			<input value="[% "SAVED_SEARCH" | string %]" name="saveAdvSearch" type="button" onclick='this.form.action.value = "saveSearch"; this.form.submit()'>
+			<input value="[% "AS_VIRTUAL_LIBRARY"  | string %]" name="saveLibraryView" type="button" onclick='this.form.action.value = "saveLibraryView"; this.form.submit()'>
 		</td>
 	</tr>
+[% END %]
 
 	<tr>
 		<td>&nbsp;</td>
 		<td class="content" valign="middle">
 			<br>
 			<input value="[% "SEARCH" | string %]" name="submitAdvSearch" id="submitAdvSearch" type="submit">
+			<select name="searchType">
+				<option value="Track">[% "SONGS" | string %]</option>
+				<option [% IF searchType == "Album" %]selected[% END %] value="Album">[% "ALBUMS" | string %]</option>
+			</select>
 			<input value="[% "CLEAR"  | string %]" name="resetAdvSearch" type="submit">
 		</td>
 	</tr>
@@ -198,6 +287,12 @@
 	[% IF browse_items.size %]
 		<div id="browsedbList">
 
+			[% IF searchType == 'Album';
+				itemInfoTemplate = 'albuminfo';
+			ELSE;
+				itemInfoTemplate = 'trackinfo';
+			END %]
+
 			[% FOREACH item = browse_items %]
 				[% PROCESS browsedbitems_list.html %]
 			[% END %]
@@ -209,6 +304,9 @@
 
 	[% END %]
 
-[% IF pageinfo.totalpages && pageinfo.totalpages > 1 %][% PROCESS pagebar %][% END %]
+[%- IF pageinfo.totalitems && useExtJS; infoTab = BLOCK -%]
+	<div>[% "ITEMS" | string %] [% pageinfo.startitem + 1 %] [% "TO" | string %] [% pageinfo.enditem + 1 %] [% "OF" | string %] [% pageinfo.totalitems %]</div>
+[%- END %]
+[% ELSIF pageinfo.totalpages && pageinfo.totalpages > 1; PROCESS pagebar; END %]
 
 [% IF not ajaxUpdate; PROCESS pagefooter.html; END %]

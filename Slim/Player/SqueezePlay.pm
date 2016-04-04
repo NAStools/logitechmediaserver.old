@@ -21,14 +21,8 @@ my $prefs = preferences('server');
 my $log = logger('network.protocol.slimproto');
 
 BEGIN {
-	if ( main::SLIM_SERVICE ) {
-		require SDI::Service::Player::SqueezeNetworkClient;
-		push @ISA, qw(SDI::Service::Player::SqueezeNetworkClient);
-	}
-	else {
-		require Slim::Player::Squeezebox2;
-		push @ISA, qw(Slim::Player::Squeezebox2);
-	}
+	require Slim::Player::Squeezebox2;
+	push @ISA, qw(Slim::Player::Squeezebox2);
 }
 
 {
@@ -44,6 +38,7 @@ BEGIN {
 		hasDigitalOut
 		hasPreAmp
 		hasDisableDac
+		hasPolarityInversion
 		spDirectHandlers
 		proxyAddress
 	));
@@ -66,6 +61,7 @@ sub new {
 		hasDigitalOut           => 0,
 		hasPreAmp               => 0,
 		hasDisableDac           => 0,
+		hasPolarityInversion    => 0,
 		spDirectHandlers        => undef,
 		proxyAddress            => undef,
 	);
@@ -86,6 +82,7 @@ my %CapabilitiesMap = (
 	HasDigitalOut           => 'hasDigitalOut',
 	HasPreAmp               => 'hasPreAmp',
 	HasDisableDac           => 'hasDisableDac',
+	HasPolarityInversion    => 'hasPolarityInversion',
 	SyncgroupID             => undef,
 	Spdirect                => 'spDirectHandlers',
 	Proxy                   => 'proxyAddress',
@@ -201,6 +198,35 @@ sub hasIR() { return 0; }
 
 sub formats {
 	return @{shift->myFormats};
+}
+
+sub pcm_sample_rates {
+	my $client = shift;
+	my $track = shift;
+
+	# extend rate lookup table to allow for up to 384k playback with 3rd party kernels and squeezeplay desktop
+	# note: higher rates only used if supported by MaxSampleRate returned by player
+	my %pcm_sample_rates = (
+		  8000 => '5',
+	 	 11025 => '0',
+		 12000 => '6',
+		 22050 => '1',
+		 24000 => '8',
+		 32000 => '2',
+		 44100 => '3',
+		 48000 => '4',
+		 16000 => '7',
+		 88200 => ':',
+		 96000 => '9',
+		176400 => ';',
+		192000 => '<',
+		352800 => '=',
+		384000 => '>',
+	);
+	
+	my $rate = $pcm_sample_rates{$track->samplerate()};
+	
+	return defined $rate ? $rate : '3';
 }
 
 sub fade_volume {

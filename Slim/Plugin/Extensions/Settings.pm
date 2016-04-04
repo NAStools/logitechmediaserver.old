@@ -67,17 +67,6 @@ sub handler {
 
 		$prefs->set('repos', \@new) if $changed;
 
-		if ($params->{'otherrepo'} && !$prefs->get('otherrepo')) {
-
-			Slim::Plugin::Extensions::Plugin->addRepo({ other => 1 });
-			$prefs->set('otherrepo', 1);
-
-		} elsif (!$params->{'otherrepo'} && $prefs->get('otherrepo')) {
-
-			Slim::Plugin::Extensions::Plugin->removeRepo({ other => 1 });
-			$prefs->set('otherrepo', 0);
-		}
-
 		# set policy for which plugins are installed/uninstalled etc
 
 		my $plugin = $prefs->get('plugin');
@@ -161,7 +150,16 @@ sub _addInfo {
 
 	for my $plugin (keys %$plugins) {
 
+		if ( main::NOMYSB && $plugins->{$plugin}->{needsMySB} ) {
+			main::DEBUGLOG && $log->debug("Skipping plugin: $plugin - requires mysqueezebox.com, but support for mysqueezebox.com is disabled.");
+			next;
+		}
+
 		my $entry = $plugins->{$plugin};
+
+		# don't show enforced plugins
+		next if $entry->{'enforce'};
+
 		my $state = $states->get($plugin);
 
 		my $entry = {
@@ -271,11 +269,11 @@ sub _addInfo {
 	$params->{'inactive'} = \@inactive;
 	$params->{'avail'}    = \@results;
 	$params->{'repos'}    = \@repos;
-	$params->{'otherrepo'}= $prefs->get('otherrepo');
 	$params->{'auto'}     = $prefs->get('auto');
 	$params->{'rand'}     = $rand;
 
-	my $needsRestart = Slim::Utils::PluginManager->needsRestart || Slim::Utils::PluginDownloader->downloading;
+	# don't offer the restart before the plugin download has succeeded.
+	my $needsRestart = Slim::Utils::PluginManager->needsRestart; # || Slim::Utils::PluginDownloader->downloading;
 
 	$params->{'warning'} = $needsRestart ? Slim::Utils::Strings::string("PLUGIN_EXTENSIONS_RESTART_MSG") : '';
 

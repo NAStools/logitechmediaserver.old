@@ -67,10 +67,10 @@ Settings = {
 
 		// cache the offsets we're going to use to resize the background image
 		this.offsets = [
-			(Ext.isIE7 ? this.background.getTop() + 3 : this.background.getTop() * 2),
-			(Ext.isIE7 ? this.background.getLeft() + 3 : this.background.getLeft() * 2),
+			this.background.getTop() * 2,
+			this.background.getLeft() * 2,
 			this.maincontent.getTop() + this.body.getHeight() - Ext.get('inner_footer').getTop()
-		]
+		];
 
 		this.tp = new Ext.TabPanel({
 			renderTo: 'settingsTabs',
@@ -101,6 +101,7 @@ Settings = {
 						this.submitSettings(function() {
 							tb.activate(tab);
 						});
+
 					}
 
 					this._resetModified();
@@ -207,6 +208,10 @@ Settings = {
 							catch(e) { location = url; }
 						});
 					}
+					else if (btn == 'no') {
+						try { frames.settings.location = url; }
+						catch(e) { location = url; }
+					}
 
 					this._resetModified();
 				}
@@ -252,15 +257,10 @@ Settings.Page = function(){
 			this.showWarning();
 			this.initDescPopup();
 			this.showRestartMessage();
+			this.showRescanMessage();
 
 			SqueezeJS.UI.FilesystemBrowser.init();
 			SqueezeJS.UI.ScrollPanel.init();
-
-			// bug 9754 - don't resize drop-down, IE6/7 don't know max-height anyway
-			if (! (Ext.isIE6 || Ext.isIE7)) {
-				this.onResize(0, Ext.lib.Dom.getViewHeight());
-				Ext.EventManager.onWindowResize(this.onResize);
-			}
 
 			var items = Ext.query('input');
 			for (var i = 0; i < items.length; i++) {
@@ -401,10 +401,6 @@ Settings.Page = function(){
 		},
 		
 		initSliders : function() {
-			// sliders are broken in IE6 - don't use them
-			if (Ext.isIE6)
-				return;
-	
 			var items = Ext.query('input[class*=sliderInput_]');
 			var inputEl;
 			
@@ -531,6 +527,27 @@ Settings.Page = function(){
 						ok: SqueezeJS.string('restart_now'),
 						cancel: SqueezeJS.string('restart_later')
 					},
+					fn: function(btn, text) {
+						if (btn == 'ok') {
+							location = restartUrl;
+						}
+					}
+				});
+				reload.update('');
+			}
+		},
+		
+		showRescanMessage : function() {
+			var reload = Ext.get('rescanWarning');
+			if (reload) {
+				var restartUrl = reload.child('a').dom.href;
+				
+				Ext.MessageBox.show({
+					title: SqueezeJS.string('settings'),
+					msg: Ext.util.Format.stripTags(
+						reload.dom.innerHTML.replace(/<br\/?>/ig, ' ')
+					),
+					buttons: Ext.Msg.OKCANCEL,
 					fn: function(btn, text) {
 						if (btn == 'ok') {
 							location = restartUrl;

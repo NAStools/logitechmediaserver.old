@@ -71,8 +71,11 @@ sub initPrefs {
 	$defaults->{libraryname} = "Squeezebox Touch";
 	$defaults->{autorescan} = 1;
 	$defaults->{disabledextensionsvideo}  = 'VIDEO';		# don't scan videos on SqueezeOS
-	$defaults->{disabledextensionsimages} = 'bmp, gif, png' # scaling down non-jpg might use too much memory
+	$defaults->{disabledextensionsimages} = 'bmp, gif, png';# scaling down non-jpg might use too much memory
+	$defaults->{dontTriggerScanOnPrefChange} = 0;
 }
+
+sub canDBHighMem { 0 }
 
 my %prefSyncHandlers = (
 	SQUEEZEPLAY_PREFS . 'SetupLanguage.lua' => sub {
@@ -239,7 +242,7 @@ sub dirsFor {
 		push @dirs, $class->SUPER::dirsFor($dir);
 		push @dirs, "/usr/squeezecenter/Slim/Plugin", "/usr/share/squeezecenter/Plugins";
 		
-	} elsif ($dir =~ /^(?:strings|revision)$/) {
+	} elsif ($dir =~ /^(?:strings|revision|repositories)$/) {
 
 		push @dirs, "/usr/squeezecenter";
 

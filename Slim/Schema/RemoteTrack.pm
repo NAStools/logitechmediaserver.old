@@ -1,7 +1,5 @@
 package Slim::Schema::RemoteTrack;
 
-# $Id$
-
 # This is an emulation of the Slim::Schema::Track API for remote tracks
 
 use strict;
@@ -11,21 +9,19 @@ use base qw(Slim::Utils::Accessor);
 use Scalar::Util qw(blessed);
 use Tie::Cache::LRU;
 
+use Slim::Utils::Cache;
 use Slim::Utils::Prefs;
 use Slim::Utils::Log;
 
 my $log = logger('formats.metadata');
+my $prefs = preferences('server');
+my $cache;
 
-# Keep a cache of up to 100 remote tracks at a time.
-my $cacheSize = 100;
+# Keep a cache of up to x remote tracks at a time - allow more if user claims to have lots of memory.
+use constant CACHE_SIZE => 500;
 
-if ( main::SLIM_SERVICE ) {
-	# Keep a much larger remote track cache on SN
-	$cacheSize = 2000;
-}
-
-tie our %Cache, 'Tie::Cache::LRU', $cacheSize;
-tie our %idIndex, 'Tie::Cache::LRU', $cacheSize;
+tie our %Cache, 'Tie::Cache::LRU', CACHE_SIZE;
+tie our %idIndex, 'Tie::Cache::LRU', CACHE_SIZE;
 
 my @allAttributes = (qw(
 	_url
@@ -41,10 +37,11 @@ my @allAttributes = (qw(
 	bpm tagversion drm musicmagic_mixable
 	musicbrainz_id lossless lyrics replay_gain replay_peak extid
 	
-	rating lastplayed playcount
+	rating lastplayed playcount virtual
 	
-	comment genre
+	_comment genre
 	
+	dlna_profile
 	stash
 	error
 ));
@@ -65,20 +62,26 @@ my @allAttributes = (qw(
 }
 
 sub init {
+	$cache = Slim::Utils::Cache->new;
+
 	my $maxPlaylistLengthCB = sub {
 		my ($pref, $max) = @_;
 		
-		$max ||= 500;
-		$max = 500 if $max > 500;
-		$max = 100 if $max < 100;
+		if ($prefs->get('dbhighmem')) {
+			$max ||= 2000;
+			$max = 2000 if $max < 2000;
+		}
+		else {
+			$max ||= 500;
+			$max = 500 if $max > 500;
+			$max = 100 if $max < 100;
+		}
 
 		my $cacheObj = tied %Cache;
 		if ($cacheObj->max_size != $max) {
 			$cacheObj->max_size($max);
 		}
 	};
-	
-	my $prefs = preferences('server');
 	
 	$maxPlaylistLengthCB->(undef, $prefs->get('maxPlaylistLength'));
 	
@@ -92,7 +95,49 @@ sub coverArtExists {0}
 
 sub isRemoteURL {shift->remote();}
 
-sub path { shift->_url(); }
+sub path { 
+	my $url = shift->_url();
+	
+	if ( $url =~ s/^tmp/file/ ) {
+		return Slim::Utils::Misc::pathFromFileURL($url);
+	}
+	
+	return $url;
+}
+
+sub comment {
+	my ($self, $new) = @_;
+	
+	if (defined $new) {	
+		$self->_comment(_mergeComments($new));
+	}
+
+	# if the comment is a list, merge those lines
+	if (ref $self->_comment && ref $self->_comment eq 'ARRAY') {
+		$self->_comment(_mergeComments($self->_comment));
+	}
+	
+	return $self->_comment;
+}
+
+sub _mergeComments {
+	my $new = shift;
+	
+	if (ref $new && ref $new eq 'ARRAY') {
+		my $comment;
+		
+		foreach my $c (@$new) {
+			# put a slash between multiple comments.
+			$comment .= ' / ' if $comment;
+			$c =~ s/^eng(.*)/$1/;
+			$comment .= $c;
+		}
+		
+		$new = $comment if $comment;
+	}
+
+	return $new;
+}
 
 sub contributorsOfType {}
 
@@ -102,7 +147,29 @@ sub delete {}
 sub retrievePersistent {}
 
 sub displayAsHTML {
-	return Slim::Schema::Track::displayAsHTML(@_);
+	my ($self, $form, $descend, $sort) = @_;
+
+	my $format = Slim::Music::Info::standardTitleFormat();
+
+	$form->{'plugin_meta'}->{'title'} ||= $self->name;
+
+	# Go directly to infoFormat, as standardTitle is more client oriented.
+	$form->{'text'}     = Slim::Music::TitleFormatter::infoFormat($self, $format, 'TITLE', $form->{'plugin_meta'});
+	$form->{'item'}     = $self->id;
+	$form->{'itemobj'}  = $self;
+	$form->{'coverid'}  = $self->coverid;
+
+	# Only include Artist & Album if the user doesn't have them defined in a custom title format.
+	if ( $format !~ /ARTIST/ && $form->{'plugin_meta'} && $form->{'plugin_meta'}->{'artist'} ) {
+		$form->{'includeArtist'} = 1;
+	}
+
+	if ( $format !~ /ALBUM/ && $form->{'plugin_meta'} && $form->{'plugin_meta'}->{'album'} ) {
+		$form->{'includeAlbum'}  = 1;
+	}
+
+	$form->{'noArtist'} = Slim::Utils::Strings::string('NO_ARTIST');
+	$form->{'noAlbum'}  = Slim::Utils::Strings::string('NO_ALBUM');
 }
 
 sub name {
@@ -134,7 +201,6 @@ sub coverArt {
 #	return undef if defined $cover && !$cover;
 	
 	# Remote files may have embedded cover art
-	my $cache = Slim::Utils::Cache->new();
 	my $image = $cache->get( 'cover_' . $self->_url );
 	
 	return undef if !$image;
@@ -163,6 +229,8 @@ sub url {
 		
 		$self->_url($new);
 		$Cache{$new} = $self;
+	
+		$cache->set('rt_' . $self->id, $new) unless main::SCANNER;
 	}
 	
 	return $self->_url;
@@ -205,6 +273,8 @@ sub new {
 	$Cache{$url} = $self;
 	$idIndex{$self->id} = $self;
 	
+	$cache->set('rt_' . $self->id, $url) unless main::SCANNER;
+	
 	return $self;
 }
 
@@ -214,6 +284,13 @@ my %localTagMapping = (
 	albumartist            => 'artistname',
 	trackartist            => 'artistname',
 	album                  => 'albumname',
+	rate                   => 'samplerate',
+	age                    => 'timestamp',
+	ct                     => 'content_type',
+	fs                     => 'filesize',
+	comment                => '_comment',
+	offset                 => 'audio_offset',
+	size                   => 'audio_size',
 	composer               => undef,
 	conductor              => undef,
 	band                   => undef,
@@ -221,16 +298,31 @@ my %localTagMapping = (
 	urlmd5                 => undef,
 );
 
+my %availableTags;
+my $separator;
+
 sub setAttributes {
 	my ($self, $attributes) = @_;
 	
-#	main::DEBUGLOG && $log->debug("$url: $self => ", Data::Dump::dump($attributes));
+	%availableTags = map { $_ => 1 } @allAttributes unless keys %availableTags;
+	
+	main::DEBUGLOG && $log->debug($self->url . " => ", Data::Dump::dump($attributes));
 	
 	while (my($key, $value) = each %{$attributes}) {
 		next if !defined $value; # XXX not sure about this
 		$key = lc($key);
 		$key = $localTagMapping{$key} if exists $localTagMapping{$key};
 		next if !defined($key) || $key eq 'url';
+		next unless $availableTags{$key};
+		
+		# some formats can return multiple values per key - join them
+		if ( (ref $value || '') eq 'ARRAY' ) {
+			if (!$separator) {
+				my @splitList = split(/\s+/, ($prefs->get('splitList') || ''));
+				$separator = ($splitList[0] || ';') . ' ';
+			}
+			$value = join($separator, @$value);
+		}
 		
 		main::DEBUGLOG && $log->is_debug && defined $self->$key() && $self->$key() ne $value &&
 			$log->debug("$key: ", $self->$key(), "=>$value");
@@ -283,7 +375,15 @@ sub fetch {
 sub fetchById {
 	my ($class, $id) = @_;
 	
-	return $idIndex{$id};
+	my $self = $idIndex{$id};
+	
+	# try to get the URL from the disk cache - might be needed for BMF of volatile tracks
+	if (!main::SCANNER && !$self) {
+		my $url = $cache->get('rt_' . $id);
+		$self = $class->new($url) if $url;
+	}
+	
+	return $self;
 }
 
 sub get {

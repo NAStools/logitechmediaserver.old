@@ -84,8 +84,7 @@ use base qw(Slim::Plugin::Base);
 
 use XML::Simple;
 
-use Slim::Networking::SimpleAsyncHTTP;
-use Slim::Networking::SqueezeNetwork;
+use Slim::Networking::Repositories;
 use Slim::Control::Jive;
 use Slim::Utils::Cache;
 use Slim::Utils::Log;
@@ -103,7 +102,7 @@ my $log = Slim::Utils::Log->addLogCategory({
 
 my $prefs = preferences('plugin.extensions');
 
-$prefs->init({ repos => [], plugin => {}, auto => 0, otherrepo => 0 });
+$prefs->init({ repos => [], plugin => {}, auto => 0 });
 
 $prefs->migrate(2, 
 				sub {
@@ -128,11 +127,8 @@ $prefs->migrate(3,
 
 my %repos = (
 	# default repos mapped to weight which defines the order they are sorted in
-	Slim::Networking::SqueezeNetwork->url('/public/plugins/logitech.xml')   => 1,
-	Slim::Networking::SqueezeNetwork->url('/public/plugins/repository.xml') => 2,
+	'http://repos.squeezecommunity.org/extensions.xml' => 1,
 );
-
-my $otherRepo = Slim::Networking::SqueezeNetwork->url('/public/plugins/other.xml');
 
 sub initPlugin {
 	my $class = shift;
@@ -143,14 +139,7 @@ sub initPlugin {
 		Slim::Control::Jive::registerExtensionProvider($repo, \&getExtensions);
 	}
 
-	# other repo available always available as an option from jive
-	Slim::Control::Jive::registerExtensionProvider($otherRepo, \&getExtensions, 'other');
-
 	if ( main::WEBUI ) {
-
-		if ($prefs->get('otherrepo')) {
-			$class->addRepo({ other => 1 });
-		}
 
 		for my $repo ( @{$prefs->get('repos')} ) {
 			$class->addRepo({ repo => $repo });
@@ -183,31 +172,27 @@ sub addRepo {
 	my $class = shift;
 	my $args = shift;
 
-	my $repo   = $args->{'other'} ? $otherRepo : $args->{'repo'};
-	my $weight = $args->{'other'} ? 5 : 10;
+	my $repo   = $args->{'repo'};
+	my $weight = 10;
 
 	main::INFOLOG && $log->info("adding repository $repo weight $weight");
 
 	$repos{$repo} = $weight;
 
-	unless ($args->{'other'}) {
-		Slim::Control::Jive::registerExtensionProvider($repo, \&getExtensions, 'user');
-	}
+	Slim::Control::Jive::registerExtensionProvider($repo, \&getExtensions, 'user');
 }
 
 sub removeRepo {
 	my $class = shift;
 	my $args = shift;
 
-	my $repo = $args->{'other'} ? $otherRepo : $args->{'repo'};
+	my $repo = $args->{'repo'};
 
 	main::INFOLOG && $log->info("removing repository $repo");
 
 	delete $repos{$repo};
 
-	unless ($args->{'other'}) {
-		Slim::Control::Jive::removeExtensionProvider($repo, \&getExtensions);
-	}
+	Slim::Control::Jive::removeExtensionProvider($repo, \&getExtensions);
 }
 
 sub repos {
@@ -235,9 +220,10 @@ sub appsQuery {
 		getExtensions({
 			'name'   => $repo, 
 			'type'   => $args->{'type'}, 
-			'target' => $args->{'targetPlat'},
-			'version'=> $args->{'targetVers'},, 
-			'lang'   => $args->{'lang'},
+			'target' => $args->{'targetPlat'} || Slim::Utils::OSDetect::OS(),
+			'version'=> $args->{'targetVers'} || $::VERSION,
+			'lang'   => $args->{'lang'} || $Slim::Utils::Strings::currentLang,
+			'details'=> $args->{'details'},
 			'cb'     => \&_appsQueryCB,
 			'pt'     => [ $request, $data ],
 		});
@@ -265,15 +251,19 @@ sub _appsQueryCB {
 
 	my $args = $request->getParam('args');
 
-	my $actions = findUpdates($data->{'results'}, $args->{'current'}, $prefs->get($args->{'type'}) || {});
+	my $actions = findUpdates($data->{'results'}, $args->{'current'}, $prefs->get($args->{'type'}) || {}, $args->{'details'});
 
 	if ($prefs->get('auto')) {
 
 		$request->addResult('actions', $actions);
 
+	} elsif ($args->{'details'}) {
+
+		$request->addResult('updates', $actions);
+
 	} else {
 
-		$request->addResult('updates', scalar keys %$actions);
+		$request->addResult('updates', join(',', keys %$actions));
 	}
 
 	$request->setStatusDone();
@@ -348,9 +338,12 @@ sub getExtensions {
 	
 		main::DEBUGLOG && $log->debug("fetching extensions xml $args->{name}");
 
-		Slim::Networking::SimpleAsyncHTTP->new(
-			\&_parseResponse, \&_noResponse, { 'args' => $args, 'cache' => 1 }
-		)->get( $args->{'name'} );
+		Slim::Networking::Repositories->get(
+			$args->{'name'},
+			\&_parseResponse,
+			\&_noResponse,
+			{ args => $args, cache => 1 }
+		);
 	}
 }
 

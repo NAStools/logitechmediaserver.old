@@ -64,13 +64,6 @@ sub loadConversionTables {
 		push @convertFiles, catdir($baseDir, 'custom-convert.conf');
 	}
 	
-	if ( main::SLIM_SERVICE ) {
-		# save time by only including native formats on SN
-		@convertFiles = (
-			catdir($FindBin::Bin, 'slimservice-convert.conf'),
-		);
-	}
-	
 	foreach my $convertFileName (@convertFiles) {
 
 		# can't read? next.
@@ -131,24 +124,26 @@ sub loadConversionTables {
 # I - can transcode from stdin
 # F - can transcode from a named file
 # R - can transcode from a remote URL (URL types unspecified)
-# 
-# O - can seek to a byte offset in the source stream
+#
+# O - can seek to a byte offset in the source stream (not yet implemented)
 # T - can seek to a start time offset
 # U - can seek to start time offset and finish at end time offset
 #
 # D - can downsample 
 # B - can limit bitrate
 #
+# default is "IF"
+
 # Substitution strings for variable capabilities
-# %f - file path (local files)
-# %F - full URL (remote streams)
+# %f, $FILE$ - file path (local files)
+# %F, $URL$  - full URL (remote streams)
 #
 # %o - stream start byte offset
-# 
-# %S - stream samples start offset
+#
+# %S - stream samples start offset (not yet implemented)
 # %s - stream seconds start offset
 # %t - stream time (m:ss) start offset
-# %U - stream samples end offset
+# %U - stream samples end offset (not yet implemented)
 # %u - stream seconds end offset
 # %v - stream time (m:ss) end offset
 # %w - stream seconds duration
@@ -158,6 +153,22 @@ sub loadConversionTables {
 # %B - limit bitrate: kb/s
 # %d - samplerate: samples/s
 # %D - samplerate: ksamples/s
+
+# %C, $CHANNELS$   - channel count
+# %c, $OCHANNELS$  - output channel count
+# %i               - clientid
+# %I, $CLIENTID$   - clientid     ( : or . replaced by - )
+# %p               - player model
+# %P, $PLAYER$     - player model ( SPACE or QOUTE replaced by _ )
+# %g               - groupid
+# %G, $GROUPID$    - groupid     ( formatted as MAC. if no group is present use CLIENTID )
+# %n               - player name
+# %N, $NAME$       - player name  ( SPACE or QOUTE replaced by _ )
+# %q, $QUALITY$    - quality
+# %Q,              - quality ( fractal notation: if = '0' return '01' )
+#     ${FILENAME}$ - contents of {FILENAME} (may contain other $*$ substitutions )
+
+# specific combinations match before wildcards
 
 sub _getCapabilities {
 	my ($profile, $capabilities) = @_;
@@ -288,6 +299,7 @@ sub getConvertCommand2 {
 	
 	my $player     = $client ? $client->model() : undef;
 	my $clientid   = $client ? $client->id() : undef;
+	my $clientprefs= $client ? $prefs->client($client) : undef;
 	my $transcoder = undef;
 	my $error;
 	my $backupTranscoder = undef;
@@ -383,13 +395,19 @@ sub getConvertCommand2 {
 		}
 
 		$transcoder = {
-			command => $command,
-			profile => $profile,
+			command          => $command,
+			profile          => $profile,
 			usedCapabilities => [@$need, @$want],
-			streamMode => $streamMode,
-			streamformat => ((split (/-/, $profile))[1]),
-			rateLimit => $rateLimit,
-			samplerateLimit => $samplerateLimit,
+			streamMode       => $streamMode,
+			streamformat     => (split (/-/, $profile))[1],
+			rateLimit        => $rateLimit || 320,
+			samplerateLimit  => $samplerateLimit || 44100,
+			clientid         => $clientid || 'undefined',
+			groupid          => $clientprefs ? ($clientprefs->get('syncgroupid') || 0) : 0,
+			name             => $client ? $client->name : 'undefined',
+			player           => $player || 'undefined',
+			channels         => $track->channels() || 2,
+			outputChannels   => $clientprefs ? ($clientprefs->get('outputChannels') || 2) : 2,
 		};
 		
 		# Check for optional profiles
@@ -458,7 +476,11 @@ sub tokenizeConvertCommand2 {
 	
 	# This must come above the FILE substitutions, otherwise it will break
 	# files with [] in their names.
-	$command =~ s/\[([^\]]+)\]/'"' . Slim::Utils::Misc::findbin($1) . '"'/eg;
+	
+	while ( $command =~ /\[([^\]]+)\]/g ) {
+		$binaries{$1} = Slim::Utils::Misc::findbin($1) unless $binaries{$1};
+	}
+	$command =~ s/\[([^\]]+)\]/'"' . $binaries{$1} . '"'/eg;
 	
 	my ($start, $end);
 	
@@ -508,6 +530,19 @@ sub tokenizeConvertCommand2 {
 		$fullpath =~ s/([\$\"\`])/\\$1/g;
 	}
 
+	# Check to see if we need to flip the endianess on output
+	$subs{'-x'}        = (unpack('n', pack('s', 1)) == 1) ? "" : "-x";
+
+	$subs{'FILE'}      = ($filepath eq '-' ? $filepath : '"' . $filepath . '"');
+	$subs{'URL'}       = '"' . $fullpath . '"';
+	$subs{'QUALITY'}   = $quality;
+	$subs{'CHANNELS'}  = $transcoder->{'channels'};
+	$subs{'OCHANNELS'} = $transcoder->{'outputChannels'};
+	$subs{'CLIENTID'}  = do { (my $tmp = $transcoder->{'clientid'}) =~ tr/.:/-/;  $tmp };
+	$subs{'PLAYER'}    = do { (my $tmp = $transcoder->{'player'}  ) =~ tr/\" /_/; $tmp };
+	$subs{'NAME'}      = do { (my $tmp = $transcoder->{'name'}    ) =~ tr/\" /_/; $tmp };
+	$subs{'GROUPID'}   = $transcoder->{'groupid'} eq 0 ? $subs{'CLIENTID'} : do { (my $tmp = sprintf ( "g%011x", $transcoder->{'groupid'}) ) =~ s/..\K(?=.)/-/g; $tmp};
+
 	foreach my $v (keys %vars) {
 		my $value;
 		
@@ -515,34 +550,63 @@ sub tokenizeConvertCommand2 {
 		elsif ($v eq 'u') {$value = "$end";}
 		elsif ($v eq 't') {$value = Slim::Utils::DateTime::fracSecToMinSec($start);}
 		elsif ($v eq 'v') {$value = Slim::Utils::DateTime::fracSecToMinSec($end);}
-		elsif ($v eq 'w') {$value = $start - $end;}
+		elsif ($v eq 'w') {$value = $end - $start;}
 
-		elsif ($v eq 'b') {$value = ($transcoder->{'rateLimit'} || 320) * 1000;}
-		elsif ($v eq 'B') {$value = ($transcoder->{'rateLimit'} || 320);}
-		
-		elsif ($v eq 'd') {$value = ($transcoder->{'samplerateLimit'} || 44100);}
-		elsif ($v eq 'D') {$value = ($transcoder->{'samplerateLimit'} || 44100) / 1000;}
-		
-		elsif ($v eq 'f') {$value = '"' . $filepath . '"';}
+		elsif ($v eq 'b') {$value = $transcoder->{'rateLimit'} * 1000;}
+		elsif ($v eq 'B') {$value = $transcoder->{'rateLimit'};}
+
+		elsif ($v eq 'd') {$value = $transcoder->{'samplerateLimit'};}
+		elsif ($v eq 'D') {$value = $transcoder->{'samplerateLimit'} / 1000;}
+
+		elsif ($v eq 'f') {$value = $subs{'FILE'};}
 		elsif ($v eq 'F') {$value = '"' . $fullpath . '"';}
-		
+
+		elsif ($v eq 'i') {$value = $transcoder->{'clientid'};}
+		elsif ($v eq 'I') {$value = $subs{'CLIENTID'};}
+		elsif ($v eq 'p') {$value = $transcoder->{'player'};}
+		elsif ($v eq 'P') {$value = $subs{'PLAYER'};}
+		elsif ($v eq 'n') {$value = $transcoder->{'clientname'};}
+		elsif ($v eq 'N') {$value = $subs{'NAME'};}
+		elsif ($v eq 'C') {$value = $transcoder->{'channels'};}
+		elsif ($v eq 'c') {$value = $transcoder->{'outputChannels'};}
+		elsif ($v eq 'q') {$value = $quality;}
+		elsif ($v eq 'Q') {$value = ($quality eq '0' ? '01' : $quality . '0');}
+		elsif ($v eq 'g') {$value = $transcoder->{'groupid'};}
+		elsif ($v eq 'G') {$value = $subs{'GROUPID'};}
+
 		foreach (values %subs) {
 			s/%$v/$value/ge;
 		}
 	}
 
-	
-	# Check to see if we need to flip the endianess on output
-	$subs{'-x'} = (unpack('n', pack('s', 1)) == 1) ? "" : "-x";
-	
-	$subs{'FILE'} = '"' . $filepath . '"';
-	$subs{'URL'} = '"' . $fullpath . '"';
-	$subs{'QUALITY'} = $quality;
-	
+	# replace subs
 	foreach (keys %subs) {
 		$command =~ s/\$$_\$/$subs{$_}/g;
 	}
 
+	# Try to read parameters from file referenced in the command's placeholder '${PREF-FILE.KEY}$' 
+	while ($command && $command =~ /\$\{(.*?)\}\$/g) {
+		my $placeholder = $1;
+		my $transcoder  = $binaries{$placeholder} || '';
+		
+		if (!exists $binaries{$placeholder}) {
+			my ($file, $pref) = $placeholder =~ /(.*)\.([^\.]+)$/;
+			
+			if ($file && $pref) {
+				$transcoder = preferences($file)->get($pref) || '';
+				$transcoder =~ s/\s+/ /;
+			} 
+			else {
+				$log->warn("couldn't find file preferences for: $placeholder");
+			}
+
+			$binaries{$placeholder} = $transcoder;
+		}
+		
+		$command =~ s/\${$placeholder}\$/$transcoder/g;
+	}
+
+	# clean all remaining '$*$'
 	$command =~ s/\s+\$\w+\$//g;
 	
 	if (!defined($noPipe)) {
@@ -550,7 +614,7 @@ sub tokenizeConvertCommand2 {
 		$command .= ' |';
 	}
 
-	main::DEBUGLOG && $log->debug("Using command for conversion: ", Slim::Utils::Unicode::utf8decode_locale($command));
+	main::INFOLOG && $log->is_info && $log->info("Using command for conversion: ", Slim::Utils::Unicode::utf8decode_locale($command));
 
 	return $command;
 }

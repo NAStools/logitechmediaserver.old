@@ -244,10 +244,7 @@ sub checkForUpdates {
 
 	$request->addParam(args => {
 		type => 'plugin',
-		targetPlat => Slim::Utils::OSDetect::OS(),
-		targetVers => $::VERSION,
-		current    => $current,
-		lang       => $Slim::Utils::Strings::currentLang,
+		current => $current,
 	});
 
 	for my $plugin (keys %$plugins) {
@@ -271,7 +268,23 @@ sub _handleResponse {
 	my $updates = $request->getResult('updates');
 	my $actions = $request->getResult('actions');
 
-	Slim::Utils::PluginManager->message($updates ? Slim::Utils::Strings::string('PLUGINS_UPDATES_AVAILABLE') : undef);
+	if ( $updates ) {
+		my $plugins = Slim::Utils::PluginManager->allPlugins;
+
+		# localize plugin names
+		$updates = join(', ',
+			map {
+				Slim::Utils::Strings::string($plugins->{$_}->{name});
+			} split(/,/, $updates)
+		);
+
+		Slim::Utils::PluginManager->message(
+			sprintf( "%s (%s)", Slim::Utils::Strings::string('PLUGINS_UPDATES_AVAILABLE'), $updates )
+		);
+		
+		# $updates is only set if we don't want to auto-update
+		return;
+	}
 
 	for my $plugin (keys %{ $actions || {} }) {
 

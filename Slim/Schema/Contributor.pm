@@ -12,7 +12,7 @@ use Slim::Schema::ResultSet::Contributor;
 use Slim::Utils::Log;
 use Slim::Utils::Misc;
 
-our %contributorToRoleMap = (
+my %contributorToRoleMap = (
 	'ARTIST'      => 1,
 	'COMPOSER'    => 2,
 	'CONDUCTOR'   => 3,
@@ -21,7 +21,11 @@ our %contributorToRoleMap = (
 	'TRACKARTIST' => 6,
 );
 
-our %roleToContributorMap = reverse %contributorToRoleMap;
+my @contributorRoles = sort keys %contributorToRoleMap;
+my @contributorRoleIds = values %contributorToRoleMap;
+my $totalContributorRoles = scalar @contributorRoles; 
+
+my %roleToContributorMap = reverse %contributorToRoleMap;
 
 {
 	my $class = __PACKAGE__;
@@ -60,15 +64,19 @@ our %roleToContributorMap = reverse %contributorToRoleMap;
 }
 
 sub contributorRoles {
-	my $class = shift;
+	return @contributorRoles;
+}
 
-	return sort keys %contributorToRoleMap;
+sub contributorRoleIds {
+	return @contributorRoleIds;
 }
 
 sub totalContributorRoles {
-	my $class = shift;
+	return $totalContributorRoles;
+}
 
-	return scalar keys %contributorToRoleMap;
+sub roleToContributorMap {
+	return \%roleToContributorMap;
 }
 
 sub typeToRole {
@@ -88,15 +96,6 @@ sub displayAsHTML {
 	
 	if ($self->name eq $vaString) {
 		$form->{'attributes'} .= "&album.compilation=1";
-	}
-
-	my $Imports = Slim::Music::Import->importers;
-
-	for my $mixer (keys %{$Imports}) {
-
-		if (defined $Imports->{$mixer}->{'mixerlink'}) {
-			&{$Imports->{$mixer}->{'mixerlink'}}($self, $form, $descend);
-		}
 	}
 }
 
@@ -141,7 +140,7 @@ sub add {
 
 		# Bug 10324, we now match only the exact name
 		my $name   = $artistList[$i];
-		my $search = Slim::Utils::Text::ignoreCaseArticles($name, 1);
+		my $search = Slim::Utils::Text::ignoreCase($name, 1);
 		my $sort   = Slim::Utils::Text::ignoreCaseArticles(($sortedList[$i] || $name));
 		my $mbid   = $brainzIDList[$i];
 		
@@ -162,7 +161,7 @@ sub add {
 		}
 		else {
 			# Bug 3069: update the namesort only if it's different than namesearch
-			if ( $search ne $sort ) {
+			if ( $search ne Slim::Utils::Unicode::utf8toLatin1Transliterate($sort) ) {
 				$sth = $dbh->prepare_cached('UPDATE contributors SET namesort = ? WHERE id = ?');
 				$sth->execute( $sort, $id );
 			}
@@ -172,6 +171,29 @@ sub add {
 	}
 
 	return wantarray ? @contributors : $contributors[0];
+}
+
+sub isInLibrary {
+	my ( $self, $library_id ) = @_;
+	
+	return 1 unless $library_id && $self->id;
+	return 1 if $library_id == -1;
+
+	my $dbh = Slim::Schema->dbh;
+	
+	my $sth = $dbh->prepare_cached( qq{
+		SELECT 1 
+		FROM library_contributor
+		WHERE contributor = ?
+		AND library = ?
+		LIMIT 1
+	} );
+	
+	$sth->execute($self->id, $library_id);
+	my ($inLibrary) = $sth->fetchrow_array;
+	$sth->finish;
+	
+	return $inLibrary;
 }
 
 # Rescan list of contributors, this simply means to make sure at least 1 track

@@ -27,9 +27,12 @@ my $prefs = preferences('server');
 
 our $defaultPrefs = {
 	'replayGainMode'     => 0,
-	'minSyncAdjust'      => 30,	# ms
+	'remoteReplayGain'   => -5,
+	'minSyncAdjust'      => 30, # ms
 	'maxBitrate'         => 0,  # no bitrate limiting
 };
+
+$prefs->setValidate({ 'validator' => 'numlimit', 'low' => -20, 'high' => 20 }, 'remoteReplayGain');
 
 sub initPrefs {
 	my $client = shift;
@@ -228,7 +231,7 @@ sub pcm_sample_rates {
 				 44100 => '3',
 				 48000 => '4',
 				 16000 => '7',
-				 88200 => '10',
+				 88200 => ':',
 				 96000 => '9',
 				 );
 

@@ -79,18 +79,15 @@ sub registerDefaultInfoProviders {
 #		func      => \&showArtwork,
 #	) );
 
-	if ( !main::SLIM_SERVICE ) {
-		$class->registerInfoProvider( contributors => (
-			after => 'top',
-			func  => \&infoContributors,
-		) );
-	}
-	if ( !main::SLIM_SERVICE ) {
-		$class->registerInfoProvider( year => (
-			after => 'top',
-			func  => \&infoYear,
-		) );
-	}
+	$class->registerInfoProvider( contributors => (
+		after => 'top',
+		func  => \&infoContributors,
+	) );
+
+	$class->registerInfoProvider( year => (
+		after => 'top',
+		func  => \&infoYear,
+	) );
 
 	$class->registerInfoProvider( duration => (
 		after    => 'year',
@@ -102,20 +99,15 @@ sub registerDefaultInfoProviders {
 		func     => \&infoReplayGain,
 	) );
 
-	if ( !main::SLIM_SERVICE ) {
-		$class->registerInfoProvider( disc => (
-			after => 'year',
-			func  => \&infoDisc,
-		) );
-	}
+	$class->registerInfoProvider( disc => (
+		after => 'year',
+		func  => \&infoDisc,
+	) );
 
-	if ( !main::SLIM_SERVICE ) {
-		$class->registerInfoProvider( compilation => (
-			after => 'year',
-			func  => \&infoCompilation,
-		) );
-	}
-	
+	$class->registerInfoProvider( compilation => (
+		after => 'year',
+		func  => \&infoCompilation,
+	) );
 }
 
 sub menu {
@@ -209,14 +201,15 @@ sub menu {
 		name  => $album->title || Slim::Music::Info::getCurrentTitle( $client, $url, 1 ),
 		type  => 'opml',
 		items => $items,
-		cover => '/music/' . $album->artwork . '/cover.jpg',
+		cover => '/music/' . ($album->artwork || 0) . '/cover.jpg',
 	};
 }
 
 sub infoContributors {
-	my ( $client, $url, $album, $remoteMeta ) = @_;
+	my ( $client, $url, $album, $remoteMeta, $tags, $filter ) = @_;
 	
 	my $items = [];
+	$filter ||= {};
 	
 	if ( $remoteMeta->{artist} ) {
 		push @{$items}, {
@@ -234,9 +227,14 @@ sub infoContributors {
 		$linkRoles{'TRACKARTIST'} = 1;
 		$linkRoles{'ALBUMARTIST'} = 1;
 		
+		my $library_id = $filter->{library_id} || Slim::Music::VirtualLibraries->getLibraryIdForClient($client);
+		
 		# Loop through the contributor types and append
 		for my $role (@roles) {
 			for my $contributor ( $album->artistsForRoles($role) ) {
+				
+				next unless $contributor->isInLibrary($library_id);
+				
 				if ($linkRoles{$role}) {
 					my $id = $contributor->id;
 					
@@ -244,23 +242,23 @@ sub infoContributors {
 						allAvailableActionsDefined => 1,
 						items => {
 							command     => ['browselibrary', 'items'],
-							fixedParams => { mode => 'albums', artist_id => $id },
+							fixedParams => { mode => 'albums', artist_id => $id, library_id => $library_id },
 						},
 						play => {
 							command     => ['playlistcontrol'],
-							fixedParams => {cmd => 'load', artist_id => $id},
+							fixedParams => { cmd => 'load', artist_id => $id, library_id => $library_id },
 						},
 						add => {
 							command     => ['playlistcontrol'],
-							fixedParams => {cmd => 'add', artist_id => $id},
+							fixedParams => { cmd => 'add', artist_id => $id, library_id => $library_id },
 						},
 						insert => {
 							command     => ['playlistcontrol'],
-							fixedParams => {cmd => 'insert', artist_id => $id},
+							fixedParams => { cmd => 'insert', artist_id => $id, library_id => $library_id },
 						},								
 						info => {
 							command     => ['artistinfo', 'items'],
-							fixedParams => {artist_id => $id},
+							fixedParams => { artist_id => $id, library_id => $library_id },
 						},								
 					);
 					$actions{'playall'} = $actions{'play'};
@@ -424,7 +422,6 @@ sub playAlbum {
 		type        => 'text',
 		playcontrol => 'play',
 		name        => cstring($client, 'PLAY'),
-		jive        => {style => 'itemplay'},
 	};
 }
 	
@@ -487,7 +484,7 @@ sub infoReplayGain {
 tie my %cachedFeed, 'Tie::Cache::LRU', 2;
 
 sub cliQuery {
-	$log->debug('cliQuery');
+	main::DEBUGLOG && $log->is_debug && $log->debug('cliQuery');
 	my $request = shift;
 	
 	# WebUI or newWindow param from SP side results in no
@@ -516,7 +513,7 @@ sub cliQuery {
 	my $connectionId   = $request->connectionID;
 	
 	my %filter;
-	foreach (qw(artist_id genre_id year)) {
+	foreach (qw(artist_id genre_id year library_id)) {
 		if (my $arg = $request->getParam($_)) {
 			$filter{$_} = $arg;
 		}

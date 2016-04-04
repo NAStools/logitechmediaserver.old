@@ -4,9 +4,10 @@
 	<name>PLUGIN_WIMP_MODULE_NAME</name>
 	<module>Slim::Plugin::WiMP::Plugin</module>
 	<version>1.2</version>
-	<description>PLUGIN_WIMP_MODULE_NAME</description>
+	<description>PLUGIN_WIMP_MODULE_DESC</description>
 	<creator>Logitech</creator>
 	<defaultState>enabled</defaultState>
+	<needsMySB>true</needsMySB>
 	<homepageURL>http://www.mysqueezebox.com/appgallery/WiMP</homepageURL>
 	<icon>plugins/WiMP/html/images/icon.png</icon>
 	<type>2</type>

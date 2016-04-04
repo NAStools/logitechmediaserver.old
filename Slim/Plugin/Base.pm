@@ -72,10 +72,8 @@ sub initPlugin {
 		}
 	}
 
-	if ( !main::SLIM_SERVICE ) {
-		if ($class->_pluginDataFor('icon')) {
-			Slim::Web::Pages->addPageLinks("icons", { $name => $class->_pluginDataFor('icon') });
-		}
+	if ($class->_pluginDataFor('icon')) {
+		Slim::Web::Pages->addPageLinks("icons", { $name => $class->_pluginDataFor('icon') });
 	}
 
 	if ($class->can('defaultMap') && !main::SCANNER) {
@@ -85,8 +83,7 @@ sub initPlugin {
 
 	# add 3rd party plugins which wish to be in the apps menu to nonSNApps list
 	if ($class->can('menu') && $class->menu && $class->menu eq 'apps' && $class =~ /^Plugins::/) {
-		$nonSNApps ||= [];
-		push @$nonSNApps, $class;
+		$class->addNonSNApp();
 	}
 }
 
@@ -119,13 +116,6 @@ sub _pluginDataFor {
 	my $pluginData = Slim::Utils::PluginManager->dataForPlugin($class);
 
 	if ($pluginData && ref($pluginData) && $pluginData->{$key}) {
-		
-		# Bug 7110, on SN provide a full path for icons
-		if ( main::SLIM_SERVICE && $key eq 'icon' ) {
-			use Slim::Networking::SqueezeNetwork;			
-			return Slim::Networking::SqueezeNetwork->url( '/static/jive/' . $pluginData->{$key}, 1 );
-		}
-
 		return $pluginData->{$key};
 	}
 
@@ -145,8 +135,15 @@ sub addWeight {
 	$WEIGHTS->{$name} = $weight if $name && $weight;
 }
 
+sub addNonSNApp {
+	my $class = shift;
+	
+	$nonSNApps ||= [];
+	push @$nonSNApps, $class;
+}
+
 sub nonSNApps {
-	return !main::SLIM_SERVICE && $nonSNApps
+	return $nonSNApps
 }
 
 1;

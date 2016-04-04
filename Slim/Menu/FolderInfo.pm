@@ -101,9 +101,10 @@ sub addFolder {
 	$actions->{add}  = $actions->{go};
 
 	return [ {
-		type => 'text',
-		name => $label,
-		jive => {
+		type        => 'text',
+		playcontrol => $cmd,
+		name        => $label,
+		jive        => {
 			actions => $actions
 		}, 
 	} ];
@@ -130,14 +131,19 @@ sub playFolder {
 	$actions->{add}  = $actions->{go};
 
 	return [ {
-		type => 'text',
-		name => cstring($client, 'PLAY'),
-		jive => {
+		type        => 'text',
+		playcontrol => 'play',
+		name        => cstring($client, 'PLAY'),
+		jive        => {
 			actions => $actions
 		}, 
 	} ];
 }
 
+
+# keep a very small cache of feeds to allow browsing into a folder info feed
+# we will be called again without $url or $albumId when browsing into the feed
+tie my %cachedFeed, 'Tie::Cache::LRU', 2;
 
 sub cliQuery {
 	my $request = shift;
@@ -162,18 +168,28 @@ sub cliQuery {
 	my $client    = $request->client;
 	my $folder_id = $request->getParam('folder_id');
 	my $menuMode  = $request->getParam('menu') || 0;
+	my $connectionId = $request->connectionID;
 
-	unless ( $folder_id ) {
+	unless ( $folder_id || $cachedFeed{$connectionId} ) {
 		$request->setStatusBadParams();
 		return;
 	}
 
-	my $tags = {
-		folder_id => $folder_id,
-		menuMode  => $menuMode,
-	};
+	my $feed;
+
+	if ( $folder_id ) {
+		my $tags = {
+			folder_id => $folder_id,
+			menuMode  => $menuMode,
+		};
+		
+		$feed = Slim::Menu::FolderInfo->menu( $client, $tags );
+	}
+	elsif ( $cachedFeed{ $connectionId } ) {
+		$feed = $cachedFeed{ $connectionId };
+	}
 	
-	my $feed = Slim::Menu::FolderInfo->menu( $client, $tags );
+	$cachedFeed{ $connectionId } = $feed if $feed;
 	
 	Slim::Control::XMLBrowser::cliQuery( 'folderinfo', $feed, $request );
 }
