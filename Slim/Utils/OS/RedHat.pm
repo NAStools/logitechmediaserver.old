@@ -48,7 +48,7 @@ sub dirsFor {
 		push @dirs, "/usr/share/squeezeboxserver/Plugins";
 		push @dirs, "/usr/lib/perl5/vendor_perl/Slim/Plugin";
 		
-	} elsif ($dir =~ /^(?:strings|revision)$/) {
+	} elsif ($dir =~ /^(?:strings|revision|repositories)$/) {
 
 		push @dirs, "/usr/share/squeezeboxserver";
 
@@ -93,6 +93,20 @@ sub dirsFor {
 
 sub scanner {
 	return '/usr/libexec/squeezeboxserver-scanner';
+}
+
+sub canAutoUpdate { $_[0]->SUPER::runningFromSource ? 0 : 1 }
+sub installerExtension { 'rpm' }; 
+sub installerOS { 'rpm' }
+
+sub getUpdateParams {
+	my ($class, $url) = @_;
+	
+	if ($url) {
+		Slim::Utils::OS::Linux::signalUpdateReady($url);
+	}
+	
+	return;
 }
 
 

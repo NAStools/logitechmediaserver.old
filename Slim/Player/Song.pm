@@ -398,7 +398,7 @@ sub open {
 		my @streamFormats;
 		push (@streamFormats, 'I') if (! $wantTranscoderSeek);
 		
-		push @streamFormats, ($handler->isRemote ? 'R' : 'F');
+		push @streamFormats, ($handler->isRemote && !Slim::Music::Info::isVolatile($handler) ? 'R' : 'F');
 		
 		($transcoder, $error) = Slim::Player::TranscodingHelper::getConvertCommand2(
 			$self,
@@ -679,7 +679,6 @@ sub pluginData {
 	my ( $self, $key, $value ) = @_;
 	
 	my $ret;
-	my $dirty = 0;
 	
 	if ( !defined $self->_pluginData() ) {
 		$self->_pluginData({});
@@ -692,22 +691,13 @@ sub pluginData {
 	if ( ref $key eq 'HASH' ) {
 		# Assign an entire hash to pluginData
 		$ret = $self->_pluginData($key);
-		$dirty = 1;
 	}
 	else {
 		if ( defined $value ) {
 			$self->_pluginData()->{$key} = $value;
-			# XXX - experimental: don't persist cover information, it's being updated upon the next track change anyway
-			$dirty = $key =~ /\b(?:httpCover|stationLogo)\b/i ? 0 : 1;
 		}
 		
 		$ret = $self->_pluginData()->{$key};
-	}
-	
-	if ( main::SLIM_SERVICE && $dirty ) {
-		# On SN, we have to persist the song pluginData to the database
-		# in order to support seamless resume on reconnect
-		$self->master()->persistSongPluginData($self);
 	}
 	
 	return $ret;
@@ -829,7 +819,7 @@ sub canDoSeek {
 
 		if ($handler->can('canSeek')) {
 			if ($handler->canSeek( $self->master(), $self )) {
-				return $self->_canSeek(1) if $handler->isRemote();
+				return $self->_canSeek(1) if $handler->isRemote() && !Slim::Music::Info::isVolatile($handler);
 				
 				# If dealing with local file and transcoding then best let transcoder seek if it can
 				
@@ -878,7 +868,7 @@ sub canDoSeek {
 		if (Slim::Player::TranscodingHelper::getConvertCommand2(
 				$self,
 				Slim::Music::Info::contentType($self->currentTrack),
-				[$handler->isRemote ? 'R' : 'F'], ['T'], []))
+				[($handler->isRemote && !Slim::Music::Info::isVolatile($handler)) ? 'R' : 'F'], ['T'], []))
 		{
 			return $self->_canSeek(2);
 		}

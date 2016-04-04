@@ -160,7 +160,10 @@ sub init {
 	
 }
 
-sub _libraryChanged {
+# keep this around for backwards compatibility - should not be needed...
+*_libraryChanged = \&libraryChanged;
+
+sub libraryChanged {
 	foreach ( Slim::Player::Client::clients() ) {
 		myMusicMenu(0, $_);
 	}
@@ -198,15 +201,6 @@ sub menuQuery {
 		
 		# Check if this is a disconnected player request
 		if ( my $id = $request->disconnectedClientID ) {
-			# On SN, if the player does not exist in the database this is a fatal error
-			if ( main::SLIM_SERVICE ) {
-				my ($player) = SDI::Service::Model::Player->search( { mac => $id } );
-				if ( !$player ) {
-					main::INFOLOG && $log->is_info && $log->info("Player $id does not exist in SN database");
-					$request->setStatusBadDispatch();
-					return;
-				}
-			}
 			
 			$client = Slim::Player::Disconnected->new($id);
 			$disconnected = 1;
@@ -266,21 +260,7 @@ sub mainMenu {
 	my @menu = map {
 		_localizeMenuItemText( $client, $_ );
 	}(
-		( main::SLIM_SERVICE && $client->model eq 'baby' && $prefs->client($client)->get('enable_radio2sr_migration', 'force') ) ? {
-			stringToken => 'MIGRATE_PLAYER',
-			weight      => 1,
-			id          => 'makeMeSmart',
-			node        => 'home',
-			actions     => {
-				go => {
-					cmd => ['smartradio_upgrade'],
-				}
-			},
-			window => {
-				'icon-id' => Slim::Networking::SqueezeNetwork->url( '/static/images/icons/ue.png', 'external' ),
-			},
-		} : (),
-		main::SLIM_SERVICE ? () : {
+		{
 			stringToken    => 'MY_MUSIC',
 			weight         => 11,
 			id             => 'myMusic',
@@ -330,9 +310,9 @@ sub mainMenu {
 			}
 		},
 		@{internetRadioMenu($client)},
-		main::SLIM_SERVICE ? () : @{albumSortSettingsItem($client, 1)},
-		main::SLIM_SERVICE ? () : @{myMusicMenu(1, $client)},
-		main::SLIM_SERVICE ? () : @{recentSearchMenu($client, 1)},
+		@{albumSortSettingsItem($client, 1)},
+		@{myMusicMenu(1, $client)},
+		@{recentSearchMenu($client, 1)},
 		@{appMenus($client, 1)},
 
 		@{globalSearchMenu($client)},		
@@ -452,7 +432,8 @@ sub registerAppMenu {
 
 	my $isInfo = $log->is_info;
 
-	my %seen;
+	# if there already is a plugin dealing with the same ID, don't initialize the mysb.com app
+	my %seen = map { $_->{id} => 1 } @pluginMenus;
 	my @new;
 
 	for my $href (@$menuArray, reverse @appMenus) {
@@ -522,6 +503,13 @@ sub registerPluginMenu {
 	for my $href (@$menuArray, reverse @pluginMenus) {
 		my $id = $href->{'id'};
 		my $node = $href->{'node'};
+		
+		# allow plugins to add themselves to the My Apps menu
+		if ($href->{node} && $href->{node} eq 'apps') {
+			$href->{node} = '';
+			$href->{isApp} ||= 1;
+		}
+		
 		if ($id) {
 			if (!$seen{$id}) {
 				main::INFOLOG && $isInfo && $log->info("registering menuitem " . $id . " to " . $node );
@@ -581,8 +569,6 @@ sub deleteAllMenuItems {
 	for my $menu ( @pluginMenus, @appMenus ) {
 		push @menuDelete, { id => $menu->{id} };
 	}
-
-	push @menuDelete, { id => 'makeMeSmart' } if main::SLIM_SERVICE;
 	
 	main::INFOLOG && $log->is_info && $log->info( $client->id . ' removing menu items: ' . Data::Dump::dump(\@menuDelete) );
 	
@@ -804,6 +790,65 @@ sub alarmUpdateMenu {
 		},
 	};
 	push @menu, $playlistChoice;
+
+	my $currentShuffleMode = $alarm->shufflemode;
+	my @shuffleMode_menu= (
+		{
+			text    => $client->string('SHUFFLE_OFF'),
+			radio   => ($currentShuffleMode == 0) + 0,
+			onClick => 'refreshOrigin',
+			actions => {
+				do => {
+					player => 0,
+					cmd    => ['alarm', 'update'],
+					params => {
+						id => $params->{id},
+						shufflemode => 0,
+					},
+				},
+			},
+			nextWindow => 'refresh',
+		},
+		{
+			text    => $client->string('SHUFFLE_ON_SONGS'),
+			radio   => ($currentShuffleMode == 1) + 0,
+			onClick => 'refreshOrigin',
+			actions => {
+				do => {
+					player => 0,
+					cmd    => ['alarm', 'update'],
+					params => {
+						id => $params->{id},
+						shufflemode => 1,
+					},
+				},
+			},
+			nextWindow => 'refresh',
+		},
+		{
+			text    => $client->string('SHUFFLE_ON_ALBUMS'),
+			radio   => ($currentShuffleMode == 2) + 0,
+			onClick => 'refreshOrigin',
+			actions => {
+				do => {
+					player => 0,
+					cmd    => ['alarm', 'update'],
+					params => {
+						id => $params->{id},
+						shufflemode => 2,
+					},
+				},
+			},
+			nextWindow => 'refresh',
+		},
+	);
+	my $shuffleMode = {
+		text      => $client->string('SHUFFLE'),
+		count     => scalar(@shuffleMode_menu),
+		offset    => 0,
+		item_loop => \@shuffleMode_menu,
+	};
+	push @menu, $shuffleMode;
 
 	my $repeat = $alarm->repeat();
 	my $repeatOn = {
@@ -1933,32 +1978,11 @@ sub howManyPlayersToSyncWith {
 	my @playerSyncList = Slim::Player::Client::clients();
 	my $synchablePlayers = 0;
 	
-	# Restrict based on players with same userid on SN
-	my $userid;
-	if ( main::SLIM_SERVICE ) {
-		$userid = $client->playerData->userid;
-	}
-	
 	for my $player (@playerSyncList) {
 		# skip ourself
 		next if ($client eq $player);
 		# we only sync slimproto devices
 		next if (!$player->isPlayer());
-		
-		# On SN, only sync with players on the current account
-		if ( main::SLIM_SERVICE ) {
-			next if $userid == 1;
-			next if $userid != $player->playerData->userid;
-			
-			# Skip players with old firmware
-			if (
-				( $player->model eq 'squeezebox2' && $player->revision < 82 )
-				||
-				( $player->model eq 'transporter' && $player->revision < 32 )
-			) {
-				next;
-			}
-		}
 		
 		$synchablePlayers++;
 	}
@@ -1968,12 +1992,6 @@ sub howManyPlayersToSyncWith {
 sub getPlayersToSyncWith() {
 	my $client = shift;
 	my @return = ();
-	
-	# Restrict based on players with same userid on SN
-	my $userid;
-	if ( main::SLIM_SERVICE ) {
-		$userid = $client->playerData->userid;
-	}
 	
 	# first add a descriptive line for this player
 	push @return, {
@@ -1992,14 +2010,12 @@ sub getPlayersToSyncWith() {
 	
 	# the logic is a little tricky here...first make a pass at any sync groups that include $client
 	if ($client->isSynced()) {
-		if (_syncSNCheck($userid, $client)) {
-			$syncList[$cnt] = {};
-			$syncList[$cnt]->{'id'}           = $client->id();
-			$syncList[$cnt]->{'name'}         = $client->syncedWithNames(0);
-			$currentlySyncedWith                = $client->syncedWithNames(0);
-			$syncList[$cnt]->{'isSyncedWith'} = 1;
-			$cnt++;
-		}
+		$syncList[$cnt] = {};
+		$syncList[$cnt]->{'id'}           = $client->id();
+		$syncList[$cnt]->{'name'}         = $client->syncedWithNames(0);
+		$currentlySyncedWith                = $client->syncedWithNames(0);
+		$syncList[$cnt]->{'isSyncedWith'} = 1;
+		$cnt++;
 	}
 
 	# then grab groups or players that are not currently synced with $client
@@ -2007,7 +2023,7 @@ sub getPlayersToSyncWith() {
 		for my $eachclient (@players) {
 			next if !$eachclient->isPlayer();
 			next if $eachclient->isSyncedWith($client);
-			next unless _syncSNCheck($userid, $eachclient);
+
 			if ($eachclient->isSynced() && Slim::Player::Sync::isMaster($eachclient)) {
 				$syncList[$cnt] = {};
 				$syncList[$cnt]->{'id'}           = $eachclient->id();
@@ -2066,25 +2082,6 @@ sub getPlayersToSyncWith() {
 	}
 
 	return \@return;
-}
-
-sub _syncSNCheck {
-	my ($userid, $player) = @_;
-	# On SN, only sync with players on the current account
-	if ( main::SLIM_SERVICE ) {
-		return undef if $userid == 1;
-		return undef if $userid != $player->playerData->userid;
-		
-		# Skip players with old firmware
-		if (
-			( $player->model eq 'squeezebox2' && $player->revision < 82 )
-			||
-			( $player->model eq 'transporter' && $player->revision < 32 )
-		) {
-			return undef;
-		}
-	}
-	return 1;
 }
 	
 sub jiveSyncCommand {
@@ -2339,7 +2336,7 @@ sub myMusicMenu {
 	my $batch = shift;
 	my $client = shift;
 
-	my $myMusicMenu = Slim::Menu::BrowseLibrary::getJiveMenu($client, 'myMusic', \&_libraryChanged);
+	my $myMusicMenu = Slim::Menu::BrowseLibrary::getJiveMenu($client, 'myMusic', \&libraryChanged);
 	
 	
 	if (!$batch) {
@@ -2708,9 +2705,6 @@ sub _jiveNoResults {
 sub cacheSearch {
 	my $request = shift;
 	my $search  = shift;
-	
-	# Don't cache searches on SN
-	return if main::SLIM_SERVICE;
 
 	if (defined($search) && $search->{text} && $search->{actions}{go}{cmd}) {
 		unshift (@recentSearches, $search);
@@ -2969,7 +2963,7 @@ sub appMenus {
 					my $clone = Storable::dclone($globalMenu);
 
 					# Set node to home or null
-					$clone->{node} = $apps->{$app}->{home_menu} == 1 ? 'home' : '';
+					$clone->{node} = ($apps->{$app}->{home_menu} && $apps->{$app}->{home_menu} == 1) ? 'home' : '';
 
 					# Use title from app list
 					$clone->{stringToken} = $apps->{$app}->{title};
@@ -2979,8 +2973,8 @@ sub appMenus {
 					
 					# use icon as defined by MySB to allow for white-label solutions
 					if ( my $icon = $apps->{$app}->{icon} ) {
-						$icon = Slim::Networking::SqueezeNetwork->url( $icon, 'external' ) unless $icon =~ /^http/;
-						$clone->{window}->{'icon-id'} = $icon ;
+						$icon = Slim::Networking::SqueezeNetwork->url( $icon, 'external' ) unless main::NOMYSB || $icon =~ /^http/;
+						$clone->{window}->{'icon-id'} = Slim::Web::ImageProxy::proxiedImage($icon);
 					}
 
 					push @{$menu}, $clone;
@@ -2996,14 +2990,14 @@ sub appMenus {
 		}
 		else {			
 			# For type=opml, use generic handler
-			if ( $apps->{$app}->{type} eq 'opml' ) {
+			if ( $apps->{$app}->{type} && $apps->{$app}->{type} eq 'opml' ) {
 				main::INFOLOG && $isInfo && $log->info( "App: $app, using generic OPML handler" );
 				
-				my $url = $apps->{$app}->{url} =~ /^http/
+				my $url = ( main::NOMYSB || $apps->{$app}->{url} =~ /^http/ )
 					? $apps->{$app}->{url} 
 					: Slim::Networking::SqueezeNetwork->url( $apps->{$app}->{url} );
 				
-				my $icon = $apps->{$app}->{icon} =~ /^http/
+				my $icon = ( main::NOMYSB || $apps->{$app}->{icon} =~ /^http/ )
 					? $apps->{$app}->{icon} 
 					: Slim::Networking::SqueezeNetwork->url( $apps->{$app}->{icon}, 'external' );
 				
@@ -3026,7 +3020,7 @@ sub appMenus {
 					node           => $node,
 					text           => $apps->{$app}->{title},
 					window         => {
-						'icon-id'  => $icon,
+						'icon-id'  => Slim::Web::ImageProxy::proxiedImage($icon),
 					},
 				};
 			}

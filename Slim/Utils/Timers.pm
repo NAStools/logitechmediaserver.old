@@ -268,14 +268,9 @@ sub _makeTimer {
 		main::PERFMON && Slim::Utils::PerfMon->check('timers', AnyEvent->time - $now, undef, $subptr);
 
 		if ( $@ ) {
-			my $name = Slim::Utils::PerlRunTime::realNameForCodeRef($subptr);
+			my $name = main::DEBUGLOG ? Slim::Utils::PerlRunTime::realNameForCodeRef($subptr) : 'unk';
 
 			logError("Timer $name failed: $@");
-			
-			if ( main::SLIM_SERVICE ) {
-				$@ =~ s/"/'/g;
-				SDI::Util::Syslog::error("service=SS-Timer method=${name} error=\"$@\"");
-			}
 		}
 		
 		# Destroy the timer after it's been run

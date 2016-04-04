@@ -14,7 +14,28 @@
 require 5.008_001;
 use strict;
 
-use constant SLIM_SERVICE => 0;
+# Bug 7491 - bug in PerlSvc: ARGV is not populated when executable is run in service mode.
+# Try to work around this limitation by reading the command line from the registry. Ugh...
+BEGIN {
+	if ($PerlSvc::VERSION && $^O =~ /^m?s?win/i && !@ARGV) {
+		eval {
+			require Win32::TieRegistry;
+			my $swKey = $Win32::TieRegistry::Registry->Open(
+				'LMachine/System/ControlSet001/services/squeezesvc', 
+				{ 
+					Access => Win32::TieRegistry::KEY_READ(), 
+					Delimiter =>'/' 
+				}
+			);
+			
+			if ($swKey) {
+				push @ARGV, split(" ", $swKey->{ImagePath});
+				shift @ARGV;	# remove script name
+			}
+		};
+	}
+}
+
 use constant SCANNER      => 0;
 use constant RESIZER      => 0;
 use constant TRANSCODING  => ( grep { /--notranscoding/ } @ARGV ) ? 0 : 1;
@@ -24,10 +45,17 @@ use constant INFOLOG      => ( grep { /--noinfolog/ } @ARGV ) ? 0 : 1;
 use constant STATISTICS   => ( grep { /--nostatistics/ } @ARGV ) ? 0 : 1;
 use constant SB1SLIMP3SYNC=> ( grep { /--nosb1slimp3sync/ } @ARGV ) ? 0 : 1;
 use constant WEBUI        => ( grep { /--noweb/ } @ARGV ) ? 0 : 1;
+use constant NOMYSB       => ( grep { /--nomysqueezebox/ } @ARGV ) ? 1 : 0;
 use constant IMAGE        => ( grep { /--noimage/ } @ARGV ) ? 0 : 1;
 use constant VIDEO        => ( grep { /--novideo/ } @ARGV ) ? 0 : 1;
 use constant ISWINDOWS    => ( $^O =~ /^m?s?win/i ) ? 1 : 0;
 use constant ISMAC        => ( $^O =~ /darwin/i ) ? 1 : 0;
+use constant LOCALFILE    => ( grep { /--localfile/ } @ARGV ) ? 1 : 0;
+use constant NOBROWSECACHE=> ( grep { /--nobrowsecache/ } @ARGV ) ? 1 : 0;
+
+# leaving some legacy flags for the moment - unlikely but possibly some 3rd party plugin is referring to it
+use constant SLIM_SERVICE => 0;
+use constant NOUPNP       => 0;
 
 use Config;
 my %check_inc;
@@ -48,6 +76,7 @@ sub Startup {
 	# Tell PerlSvc to bundle these modules
 	if (0) {
 		require 'auto/Compress/Raw/Zlib/autosplit.ix';
+		require Cache::FileCache;
 	}
 	
 	# added to workaround a problem with 5.8 and perlsvc.
@@ -164,6 +193,18 @@ sub HAS_AIO {
 	return $HAS_AIO;
 }
 
+my $MEDIASUPPORT;
+sub MEDIASUPPORT {
+	return $MEDIASUPPORT if defined $MEDIASUPPORT;
+
+	eval {
+		$MEDIASUPPORT = (main::IMAGE || main::VIDEO) && (Slim::Utils::PluginManager->isEnabled('Slim::Plugin::UPnP::Plugin') ? 1 : 0);
+	};
+		
+	return $MEDIASUPPORT;
+}
+
+
 # Force XML::Simple to use XML::Parser for speed. This is done
 # here so other packages don't have to worry about it. If we
 # don't have XML::Parser installed, we fall back to PurePerl.
@@ -211,23 +252,24 @@ use Slim::Menu::GlobalSearch;
 use Slim::Menu::BrowseLibrary;
 use Slim::Music::Info;
 use Slim::Music::Import;
+use Slim::Music::VirtualLibraries;
 use Slim::Utils::OSDetect;
 use Slim::Player::Playlist;
 use Slim::Player::Sync;
 use Slim::Player::Source;
 use Slim::Utils::Cache;
 use Slim::Utils::Scanner;
+use Slim::Utils::Scanner::Local;
 use Slim::Utils::Scheduler;
 use Slim::Networking::Async::DNS;
 use Slim::Networking::Select;
-use Slim::Networking::SqueezeNetwork;
 use Slim::Networking::UDP;
 use Slim::Control::Stdio;
 use Slim::Utils::Strings qw(string);
 use Slim::Utils::Timers;
-use Slim::Utils::Update;
 use Slim::Networking::Slimproto;
 use Slim::Networking::SimpleAsyncHTTP;
+use Slim::Networking::Repositories;
 use Slim::Utils::Firmware;
 use Slim::Control::Jive;
 use Slim::Formats::RemoteMetadata;
@@ -274,11 +316,9 @@ our @AUTHORS = (
 
 my $prefs        = preferences('server');
 
-our $VERSION     = '7.7.5';
+our $VERSION     = '7.9.0';
 our $REVISION    = undef;
 our $BUILDDATE   = undef;
-our $audiodir    = undef;
-our $playlistdir = undef;
 our $httpport    = undef;
 
 our (
@@ -308,15 +348,6 @@ our (
 	$nosetup,
 	$noserver,
 	$norestart,
-	$noupnp,
-	$noweb,
-	$notranscoding,
-	$nodebuglog,
-	$noinfolog,
-	$noimages,
-	$novideo,
-	$nosb1slimp3sync,
-	$nostatistics,
 	$stdio,
 	$stop,
 	$perfwarn,
@@ -350,7 +381,7 @@ sub init {
 
 	my $log = logger('server');
 
-	$log->error("Starting Logitech Media Server (v$VERSION, $REVISION, $BUILDDATE) perl $]");
+	$log->error("Starting Logitech Media Server (v$VERSION, $REVISION, $BUILDDATE) perl $] - " . $main::Config{archname});
 
 	if ($diag) { 
 		eval "use diagnostics";
@@ -372,6 +403,7 @@ sub init {
 	}
 
 	Slim::Utils::OSDetect::init();
+	my $os = Slim::Utils::OSDetect->getOS();
 
 	# initialize server subsystems
 	initSettings();
@@ -425,7 +457,7 @@ sub init {
 	$failsafe ? $prefs->set('failsafe', 1) : $prefs->remove('failsafe');
 
 	# Change UID/GID after the pid & logfiles have been opened.
-	unless (Slim::Utils::OSDetect::getOS->dontSetUserAndGroup() || (defined($user) && $> != 0)) {
+	unless ($os->dontSetUserAndGroup() || (defined($user) && $> != 0)) {
 		main::INFOLOG && $log->info("Server settings effective user and group if requested...");
 		changeEffectiveUserAndGroup();		
 	}
@@ -444,7 +476,7 @@ sub init {
 	}
 
 	main::INFOLOG && $log->info("Server binary search path init...");
-	Slim::Utils::OSDetect::getOS->initSearchPath();
+	$os->initSearchPath();
 
 	# Find plugins and process any new ones now so we can load their strings
 	main::INFOLOG && $log->info("Server PluginManager init...");
@@ -473,8 +505,14 @@ sub init {
 	Slim::Networking::Async::HTTP->init;
 	Slim::Networking::SimpleAsyncHTTP->init;
 	
-	main::INFOLOG && $log->info("SqueezeNetwork Init...");
-	Slim::Networking::SqueezeNetwork->init();
+	if (!main::NOMYSB) {
+		main::INFOLOG && $log->info("SqueezeNetwork Init...");
+		require Slim::Networking::SqueezeNetwork;
+		Slim::Networking::SqueezeNetwork->init();
+	}
+	
+	main::INFOLOG && $log->info("Download repositories init...");
+	Slim::Networking::Repositories->init();
 	
 	main::INFOLOG && $log->info("Firmware init...");
 	Slim::Utils::Firmware->init;
@@ -494,7 +532,7 @@ sub init {
 	main::INFOLOG && $log->info("Server Buttons init...");
 	Slim::Buttons::Common::init();
 
-	if ($stdio) {
+	if ($stdio || ($ENV{LMS_STDIO} && $REVISION eq 'TRUNK')) {
 		main::INFOLOG && $log->info("Server Stdio init...");
 		Slim::Control::Stdio::init(\*STDIN, \*STDOUT);
 	}
@@ -507,25 +545,20 @@ sub init {
 
 	main::INFOLOG && $log->info("Cache init...");
 	Slim::Utils::Cache->init();
-	Slim::Schema::RemoteTrack->init();
-
-	unless ( $noupnp || $prefs->get('noupnp') ) {
-		main::INFOLOG && $log->info("UPnP init...");
-		require Slim::Utils::UPnPMediaServer;
-		Slim::Utils::UPnPMediaServer::init();
-	}
 	
-	# Load the relevant importers - necessary to ensure that Slim::Schema::init() is called.
-	if (Slim::Utils::Misc::getMediaDirs()) {
-		require Slim::Media::MediaFolderScan;
-		Slim::Media::MediaFolderScan->init();
-	}
-	if (Slim::Utils::Misc::getPlaylistDir()) {
-		require Slim::Music::PlaylistFolderScan;
-		Slim::Music::PlaylistFolderScan->init();
-	}
-	initClass('Slim::Plugin::iTunes::Importer') if Slim::Utils::PluginManager->isConfiguredEnabled('iTunes');
-	initClass('Slim::Plugin::MusicMagic::Importer') if Slim::Utils::PluginManager->isConfiguredEnabled('MusicMagic');
+	Slim::Schema->init();
+	Slim::Schema::RemoteTrack->init();
+	
+	Slim::Music::VirtualLibraries->init();
+	
+	# Register the default importers - necessary to ensure that Slim::Schema::init() is called
+	# but no need to initialize it, as it's being run in external scanner mode only
+	# XXX - we should be able to handle this differently
+	Slim::Music::Import->addImporter( 'Slim::Media::MediaFolderScan', {
+		type   => 'file',
+		weight => 1,
+		use    => 1,
+	} );
 
 	main::INFOLOG && $log->info("Server HTTP init...");
 	Slim::Web::HTTP::init();
@@ -563,9 +596,6 @@ sub init {
 	main::INFOLOG && $log->info("Server Jive init...");
 	Slim::Control::Jive->init();
 	
-	main::INFOLOG && $log->info("Remote Metadata init...");
-	Slim::Formats::RemoteMetadata->init();
-	
 	# Reinitialize logging, as plugins may have been added.
 	if (Slim::Utils::Log->needsReInit) {
 
@@ -575,7 +605,7 @@ sub init {
 	main::INFOLOG && $log->info("Server checkDataSource...");
 	checkDataSource();
 	
-	if ( Slim::Utils::OSDetect::getOS->canAutoRescan && $prefs->get('autorescan') ) {
+	if ( $os->canAutoRescan && $prefs->get('autorescan') ) {
 		require Slim::Utils::AutoRescan;
 		
 		main::INFOLOG && $log->info('Auto-rescan init...');
@@ -616,11 +646,14 @@ sub init {
 		Slim::Utils::PerfMon->init($perfwarn);
 	}
 
-	Slim::Utils::Timers::setTimer(
-		undef,
-		time() + 30,
-		\&Slim::Utils::Update::checkVersion,
-	);
+	if ( !$os->runningFromSource && $prefs->get('checkVersion') ) {
+		require Slim::Utils::Update;
+		Slim::Utils::Timers::setTimer(
+			undef,
+			time() + 30,
+			\&Slim::Utils::Update::checkVersion,
+		);
+	}
 
 	main::INFOLOG && $log->info("Server HTTP enable...");
 	Slim::Web::HTTP::init2();
@@ -674,7 +707,7 @@ sub idle {
 		# empty notifcation queue, only if no IR events are pending
 		$pendingEvents = Slim::Control::Request::checkNotifications();
 		
-		if ( !main::SLIM_SERVICE && !$pendingEvents ) {
+		if ( !$pendingEvents ) {
 			# run scheduled tasks, only if no other events are pending
 			$pendingEvents = Slim::Utils::Scheduler::run_tasks();
 		}
@@ -721,8 +754,9 @@ Usage: $0 [--diag] [--daemon] [--stdio]
           [--perfmon] [--perfwarn=<threshold> | --perfwarn <warn options>]
           [--checkstrings] [--charset <charset>]
           [--noweb] [--notranscoding] [--nosb1slimp3sync] [--nostatistics] [--norestart]
-          [--noimage] [--novideo]
+          [--noimage] [--novideo] [--nobrowsecache]
           [--logging <logging-spec>] [--noinfolog | --nodebuglog]
+          [--localfile]
 
     --help           => Show this usage information.
     --cachedir       => Directory for Logitech Media Server to save cached music and web data
@@ -768,7 +802,9 @@ Usage: $0 [--diag] [--daemon] [--stdio]
     --notranscoding  => Disable transcoding support.
     --noimage        => Disable scanning for images.
     --novideo        => Disable scanning for videos.
-    --noupnp         => Disable UPnP subsystem
+    --nomysqueezebox => Disable mysqueezebox.com integration.
+                        Warning: This effectively disables all music services provided by Logitech apps.
+    --nobrowsecache  => Disable caching of rendered browse pages.
     --perfmon        => Enable internal server performance monitoring
     --perfwarn       => Generate log messages if internal tasks take longer than specified threshold
     --failsafe       => Don't load plugins
@@ -777,6 +813,7 @@ Usage: $0 [--diag] [--daemon] [--stdio]
                         which don't have full utf8 locale installed
     --dbtype         => Force database type (valid values are MySQL or SQLite)
     --logging        => Enable logging for the specified comma separated categories
+    --localfile      => Enable LocalFile protocol handling for locally connected squeezelite service
 
 Commands may be sent to the server through standard in and will be echoed via
 standard out.  See complete documentation for details on the command syntax.
@@ -813,24 +850,24 @@ sub initOptions {
 		'prefsfile=s'   => \$prefsfile,
 		# prefsdir is parsed by Slim::Utils::Prefs prior to initOptions being run
 		'quiet'	        => \$quiet,
-		'nodebuglog'    => \$nodebuglog,
-		'noinfolog'     => \$noinfolog,
-		'noimage'       => \$noimages,
-		'novideo'       => \$novideo,
 		'norestart'     => \$norestart,
 		'nosetup'       => \$nosetup,
 		'noserver'      => \$noserver,
-		'nostatistics'  => \$nostatistics,
-		'noupnp'        => \$noupnp,
-		'nosb1slimp3sync'=> \$nosb1slimp3sync,
-		'notranscoding' => \$notranscoding,
-		'noweb'         => \$noweb,
 		'failsafe'      => \$failsafe,
 		'perfwarn=s'    => \$perfwarn,  # content parsed by PerfMon if set
 		'checkstrings'  => \$checkstrings,
 		'charset=s'     => \$charset,
 		'dbtype=s'      => \$dbtype,
 		'd_startup'     => \$d_startup, # Needed for Slim::bootstrap
+		# these values are parsed separately, we don't need these values in a variable - just get them off the list
+		'nodebuglog'    => sub {},
+		'noinfolog'     => sub {},
+		'noimage'       => sub {},
+		'novideo'       => sub {},
+		'nostatistics'  => sub {},
+		'nosb1slimp3sync'=> sub {},
+		'notranscoding' => sub {},
+		'noweb'         => sub {},
 	);
 
 	# make --logging and --debug synonyms, but prefer --logging
@@ -923,11 +960,13 @@ sub daemonize {
 	}
 
 	open STDOUT, '>>/dev/null';
-	
+
+	# Do not attempt to daemonize again.
+	@argv = grep { $_ ne '--daemon' } @argv;
+
 	# On Leopard, GD will crash because you can't run CoreServices code in a forked child,
 	# so we have to exec as well.
 	if ( $^O =~ /darwin/ ) {
-		@argv = grep { $_ ne '--daemon' } @argv;
 		exec $^X . ' "' . $0 . '" ' . join( ' ', @argv );
 		exit;
 	}
@@ -1059,14 +1098,14 @@ sub checkDataSource {
 	
 	# Count entries for all media types, run scan if all are empty
 	my $dbh = Slim::Schema->dbh;
-	my ($tc, $vc, $ic) = $dbh->selectrow_array( qq{
+	my ($gc, $vc, $ic) = $dbh->selectrow_array( qq{
 		SELECT
-			(SELECT COUNT(*) FROM tracks where audio = 1) as tc,
-			(SELECT COUNT(*) FROM videos) as vc,
-			(SELECT COUNT(*) FROM images) as ic
+			(SELECT COUNT(1) FROM genres) as gc,
+			(SELECT COUNT(1) FROM videos) as vc,
+			(SELECT COUNT(1) FROM images) as ic
 	} );
 
-	if (Slim::Schema->schemaUpdated || (!$tc && !$vc && !$ic)) {
+	if (Slim::Schema->schemaUpdated || (!$gc && !$vc && !$ic)) {
 
 		logWarning("Schema updated or no media found in the database, initiating scan.");
 
@@ -1082,22 +1121,39 @@ sub forceStopServer {
 #
 # Clean up resources and exit.
 #
-sub stopServer {
-	my $restart = shift;
+# All server code must direct stop and restart requests here and should
+# not attempt to manipulate or interrogate the OS specific code directly.
+#
+sub canRestartServer {
+	return !$::norestart && Slim::Utils::OSDetect->getOS()->canRestartServer();
+}
 
-	logger('')->info( 'Logitech Media Server ' . ($restart && !$::norestart ? 'restarting...' : 'shutting down.') );
-	
-	$::stop = 1;
-	
-	cleanup();
-	
-	if ($restart && !$::norestart
-		&& Slim::Utils::OSDetect->getOS()->canRestartServer() 
-		&& !main::ISWINDOWS)
-	{
-		exec($^X, $0, @argv);
+sub restartServer {
+
+	if ( canRestartServer() ) {
+		cleanup();
+		logger('')->info( 'Logitech Media Server restarting...' );
+		
+		if ( !Slim::Utils::OSDetect->getOS()->restartServer($0, \@argv) ) {
+			logger('')->error("Unable to restart Logitech Media Server");
+		}
 	}
 
+	# XXX - shouldn't we ignore the restart command if we can't restart?
+	else {
+		logger('')->error("Unable to restart Logitech Media Server - shutting down.");
+		stopServer();
+	}
+
+	exit();
+}
+
+sub stopServer {
+
+	cleanup();
+
+	logger('')->info( 'Logitech Media Server shutting down.' );
+	
 	exit();
 }
 

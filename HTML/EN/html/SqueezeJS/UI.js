@@ -971,7 +971,7 @@ if (Ext.dd && Ext.dd.ScrollManager && Ext.dd.DDProxy) {
 			}
 	
 			dragEl.applyStyles({'z-index':2000});
-			dragEl.update(el.child('div').dom.innerHTML);
+			dragEl.update(el.dom.innerHTML);
 			dragEl.addClass(el.dom.className + ' dd-proxy');
 		},
 	
@@ -1157,13 +1157,46 @@ if (SqueezeJS.UI.SplitButton && Ext.MessageBox && Ext.Window) {
 						isplayer: playerInfo.isplayer
 					});
 	
+					var tpl = new Ext.Template( '<div>{title}<span class="browsedbControls"><img src="' + webroot + 'html/images/{powerImg}.gif" id="{powerId}">&nbsp;<img src="' + webroot + 'html/images/{playPauseImg}.gif" id="{playPauseId}"></span></div>')
+					
 					this.menu.add(
 						new Ext.menu.CheckItem({
-							text: playerInfo.name,
+							text: tpl.apply({
+								title: playerInfo.name,
+								playPauseImg: playerInfo.isplaying ? 'b_pause' : 'b_play',
+								playPauseId: playerInfo.playerid + ' ' + (playerInfo.isplaying ? 'pause' : 'play'),
+								powerImg: playerInfo.power ? 'b_poweron' : 'b_poweroff',
+								powerId: playerInfo.playerid + ' power ' + (playerInfo.power ? '0' : '1')
+							}),
 							value: playerInfo.playerid,
 							cls: playerInfo.model,
 							group: 'playerList',
 							checked: playerInfo.playerid == playerid,
+							hideOnClick: false,
+							listeners: {
+								click: function(self, ev) {
+									var target = ev ? ev.getTarget() : null;
+									
+									// check whether user clicked one of the playlist controls
+									if ( target && Ext.id(target).match(/^([a-f0-9:]+ (?:power|play|pause)\b.*)/i) ) {
+										var cmd = RegExp.$1.split(' ');
+										
+										Ext.Ajax.request({
+											url: SqueezeJS.Controller.getBaseUrl() + '/jsonrpc.js',
+											method: 'POST',
+											params: Ext.util.JSON.encode({
+												id: 1,
+												method: "slim.request",
+												params: [cmd.shift(), cmd]
+											}),
+											callback: function() {
+												SqueezeJS.Controller.updateAll();
+											}
+										});
+										return false;
+									}
+								}
+							},
 							scope: this,
 							handler: this._selectPlayer
 						})
@@ -1303,10 +1336,20 @@ if (SqueezeJS.UI.SplitButton && Ext.MessageBox && Ext.Window) {
 			return playersByServer;
 		},
 	
-		_selectPlayer: function(ev){
-			if (ev) {
-				this.setText(ev.text || '');
-				SqueezeJS.Controller.selectPlayer(ev.value);
+		_selectPlayer: function(item, ev){
+			if (item) {
+				this.setText(item.text || '');
+				SqueezeJS.Controller.selectPlayer(item.value);
+
+				// local players have hideOnClick disabled - but we want them to hide anyway
+				if (!item.hideOnClick) {
+					var pm = item.parentMenu;
+					if (pm.floating) {
+						this.clickHideDelayTimer = pm.hide.defer(item.clickHideDelay, pm, [true]);
+					} else {
+						pm.deactivateActive();
+					}
+				}
 			}
 			else
 				this.setText('');		
@@ -1652,7 +1695,7 @@ SqueezeJS.UI.PlaytimeProgress = Ext.extend(SqueezeJS.UI.Playtime, {
 
 		var el = Ext.get(this.applyTo);
 		el.update( '<img src="/html/images/spacer.gif" class="progressLeft"/><img src="/html/images/spacer.gif" class="progressFillLeft"/>'
-			+ '<img src="/html/images/spacer.gif" class="progressIndicator"/><img src="html/images/spacer.gif" class="progressFillRight"/>'
+			+ '<img src="/html/images/spacer.gif" class="progressIndicator"/><img src="/html/images/spacer.gif" class="progressFillRight"/>'
 			+ '<img src="/html/images/spacer.gif" class="progressRight"/>' );	
 
 		// store the DOM elements to reduce flicker
@@ -1665,24 +1708,61 @@ SqueezeJS.UI.PlaytimeProgress = Ext.extend(SqueezeJS.UI.Playtime, {
 		this.fixedWidth += el.child('img.progressIndicator').getWidth();
 
 		Ext.get(this.applyTo).on('click', this.onClick);
+
+		if (Ext.ToolTip) {
+			this.tooltip = new Ext.ToolTip({
+				target: 'ctrlProgress',
+				anchor: 'bottom',
+				dismissDelay: 30000,
+				hideDelay: 0,
+				showDelay: 0,
+				trackMouse: true,
+				listeners: {
+					'move': {
+						fn: function(tooltip, x, y) {
+							// don't know why we need the additional 10px offset...
+							var pos = Math.max(x - this.el.getX() + this.fixedWidth + this.offset + 10, 0);
+							pos = pos / Math.max(this.el.getWidth(), pos);
+
+							tooltip.update(SqueezeJS.Utils.formatTime(pos * SqueezeJS.Controller.playerStatus.duration));
+						},
+						scope: this
+					}
+				}
+			});
+		}
 	},
 
 	onPlaytimeUpdate : function(playtime){
 		if (this.el && playtime) {
 			var left;
-			var max = this.el.getWidth() - this.fixedWidth - 1; // total of left/right/indicator width
+			var max = this.el.getWidth() - this.fixedWidth;
+
+			if (isNaN(this.offset))
+				this.offset = max > 0 ? 1 : 11;
+
+			if (max == 0)
+				return;
+			
+			max -= this.offset; // total of left/right/indicator width
 
 			// if we don't know the total play time, just put the indicator in the middle
-			if (!playtime.duration)
+			if (!playtime.duration) {
 				left = 0;
-
+				if (this.tooltip)
+					this.tooltip.disable();
+			}
 			// calculate left/right percentage
-			else
+			else {
 				left = Math.max(
 						Math.min(
 							Math.floor(playtime.current / playtime.duration * max)
 						, max)
 					, 1);
+
+				if (this.tooltip)
+					this.tooltip.enable();
+			}
 
 			this.remaining.setWidth(max - left);
 			this.playtime.setWidth(left);
@@ -1694,7 +1774,8 @@ SqueezeJS.UI.PlaytimeProgress = Ext.extend(SqueezeJS.UI.Playtime, {
 			return;
  
 		var pos = Math.max(ev.xy[0] - this.getX(), 0);
-		pos = pos / Math.max(this.getWidth(), pos)
+		pos = pos / Math.max(this.getWidth(), pos);
+		
 		SqueezeJS.Controller.playerControl(['time', pos * SqueezeJS.Controller.playerStatus.duration]);
 	}
 });

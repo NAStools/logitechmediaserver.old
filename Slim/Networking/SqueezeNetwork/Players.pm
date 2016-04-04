@@ -76,7 +76,9 @@ sub shutdown {
 	main::INFOLOG && $log->info( "SqueezeNetwork player list shutdown" );
 }
 
-sub fetch_players {
+sub fetch_players { if (main::NOMYSB) {
+	logBacktrace("Support for mysqueezebox.com has been disabled. Please update your code: don't call me if main::NOMYSB.");
+} else {
 	# XXX: may want to improve this for client new/disconnect/reconnect/forget to only fetch
 	# player into for that single player
 	
@@ -89,7 +91,7 @@ sub fetch_players {
 	);
 	
 	$http->get( $http->url( '/api/v1/players' ) );
-}
+} }
 
 sub _players_done {
 	my $http = shift;
@@ -176,6 +178,10 @@ sub _players_done {
 		Slim::Web::Pages->delPageCategory('my_apps');
 		
 		for my $app ( keys %{$allApps} ) {
+			
+			# don't initialize if we have a local plugin overriding the mysb.com service
+			next if $allApps->{'nonsn_' . $app};
+			
 			my $info = $allApps->{$app};
 			
 			# If this app is supported by a local plugin, we'll use the webpage already setup for it
@@ -185,12 +191,11 @@ sub _players_done {
 					_updateWebLink($plugin->{name}, $app, $info);
 				}
 			}
-			elsif ( $info->{type} eq 'opml' ) {
+			elsif ( $info->{type} && $info->{type} eq 'opml' ) {
 				# Setup a generic OPML menu for this app
 
 				my $icon = $info->{icon};
 				if ( $icon !~ /^http/ ) {
-					# XXX: fix the template to use imageproxy to resize this icon
 					$icon = Slim::Networking::SqueezeNetwork->url($icon);
 				}
 				
@@ -208,12 +213,12 @@ sub _players_done {
 				eval { $subclass->getDisplayName() };
 
 				if (!$@) {
-					$log->debug("Plugin $subclass already initialized - skipping");
+					main::DEBUGLOG && $log->is_debug && $log->debug("Plugin $subclass already initialized - skipping");
 					_updateWebLink($info->{title}, $app);
 					next; 
 				}
 
-				$log->debug("Initializing plugin for mysqueezebox.com based app '$app': $subclass");
+				main::DEBUGLOG && $log->is_debug && $log->debug("Initializing plugin for mysqueezebox.com based app '$app': $subclass");
 				
 				my $code = qq{
 					package ${subclass};
@@ -340,19 +345,23 @@ sub _players_error {
 	);
 }
 
-sub get_players {
+sub get_players { if (main::NOMYSB) {
+	logBacktrace("Support for mysqueezebox.com has been disabled. Please update your code: don't call me if main::NOMYSB.");
+} else {
 	my $class = shift;
 	
 	return wantarray ? @{$CONNECTED_PLAYERS} : $CONNECTED_PLAYERS;
-}
+} }
 
-sub is_known_player {
+sub is_known_player { if (main::NOMYSB) {
+	logBacktrace("Support for mysqueezebox.com has been disabled. Please update your code: don't call me if main::NOMYSB.");
+} else {
 	my ($class, $client) = @_;
 	
 	my $mac = ref($client) ? $client->macaddress() : $client;
 
 	return scalar( grep { $mac eq $_->{mac} } @{$CONNECTED_PLAYERS}, @{$INACTIVE_PLAYERS} );	
-}
+} }
 
 sub disconnect_player {
 	my $request = shift;

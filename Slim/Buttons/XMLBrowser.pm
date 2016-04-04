@@ -408,6 +408,8 @@ sub gotRSS {
 			my $item   = shift;
 			if (Slim::Control::XMLBrowser::hasDescription($item)) {
 				displayItemDescription($client, $item, $feed);
+			} elsif ($item->{items}) {
+				gotRSS($client, $url, $item, $params);
 			} else {
 				displayItemLink($client, $item);
 			}
@@ -802,7 +804,7 @@ sub gotOPML {
 						push @details, '{BITRATE}: ' . $item->{'bitrate'} . ' {KBPS}';
 					}
 					
-					if ( my $duration = $item->{'duration'} ) {
+					if ( my $duration = $item->{'secs'} || $item->{'duration'} ) {
 						$duration = sprintf('%s:%02s', int($duration / 60), $duration % 60);
 						push @details, '{LENGTH}: ' . $duration;
 					}
@@ -925,11 +927,11 @@ sub handleSearch {
 		my $searchURL    = $item->{'url'};
 		my $searchString = ${ $client->modeParam('valueRef') };
 		
-		if ( main::SLIM_SERVICE ) {
-			# XXX: not sure why this is only needed on SN
-			my $rightarrow = $client->symbols('rightarrow');
-			$searchString  =~ s/$rightarrow//;
-		}
+#		if ( main::SLIM_SERVICE ) {
+#			# XXX: not sure why this is only needed on SN
+#			my $rightarrow = $client->symbols('rightarrow');
+#			$searchString  =~ s/$rightarrow//;
+#		}
 		
 		# Don't allow null search string
 		return $client->bumpRight if $searchString eq '';

@@ -13,3 +13,9 @@ PLUGIN_MY_APPS_MODULE_NAME
 	RU	Мои приложения
 	SV	Mina program
 
+PLUGIN_MY_APPS_NO_APPS
+	DE	Keine Anwendung installiert
+	EN	No App installed
+	FR	Aucune application n'est installée
+	NL	Geen toepassing geïnstalleerd
+	PL	Brak zainstalowanych aplikacji

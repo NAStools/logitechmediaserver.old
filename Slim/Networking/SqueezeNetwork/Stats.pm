@@ -19,7 +19,7 @@ my $log   = logger('network.squeezenetwork');
 my $prefs = preferences('server');
 
 # Regex for which URLs we want to report stats for
-my $REPORT_RE = qr{^(?:http|mms|sirius|live365|loop)://};
+my $REPORT_RE = qr{^(?:http|mms|live365|loop)://};
 
 # Report stats to SN at this interval
 my $REPORT_INTERVAL = 1200;
@@ -33,6 +33,9 @@ my $MAX_ITEMS_PER_UPLOAD = 8 * 1024;
 
 sub init {
 	my ( $class, $json ) = @_;
+	
+	# Check if stats are disabled
+	return if $prefs->get('sn_disable_stats');
 	
 	main::INFOLOG && $log->info( "SqueezeNetwork stats init" );
 	

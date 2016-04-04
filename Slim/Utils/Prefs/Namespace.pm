@@ -217,7 +217,7 @@ $prefs->client($client)->get('pref1');
 sub client {
 	# opimised due to frequency of being called
 	return unless $_[1];
-	
+
 	if ( my $client = $_[0]->{'clients'}->{ $_[1]->id } ) {
 		return $client;
 	}
@@ -298,11 +298,6 @@ Trigger saving of this namespace's preferences.  This is delayed by 10 seconds t
 
 sub save {
 	my $class = shift;
-	
-	if ( main::SLIM_SERVICE ) {
-		# No prefs files on SN
-		return;
-	}
 
 	return if ($class->{'writepending'});
 	
@@ -364,7 +359,9 @@ sub migrate {
 	my $callback = shift;
 
 	if ($version > $class->{'prefs'}->{'_version'} && ref $callback eq 'CODE') {
-
+		
+		require Slim::Utils::Prefs::OldPrefs;
+		
 		if ($callback->($class)) {
 
 			main::INFOLOG && $log->info("migrated prefs for $class->{'namespace'} to version $version");

@@ -11,6 +11,7 @@ use base qw(Slim::Plugin::Favorites::Opml);
 use File::Spec::Functions qw(:ALL);
 use Scalar::Util qw(blessed);
 
+use Slim::Menu::BrowseLibrary;
 use Slim::Player::ProtocolHandlers;
 use Slim::Utils::Log;
 use Slim::Utils::Strings qw(string);
@@ -18,6 +19,7 @@ use Slim::Utils::Prefs;
 
 my $log = logger('favorites');
 
+my $prefs = preferences('plugin.favorites');
 my $prefsServer = preferences('server');
 
 my $favs; # single instance for all callers
@@ -130,7 +132,7 @@ sub _urlindex {
 		}
 
 		# look up icon if not defined or an album or track (can change during rescan)
-		if (!$entry->{'icon'} || $entry->{'URL'} =~ /^db:album/ || $entry->{'URL'} =~ /^file:/) {
+		if ( !$entry->{'icon'} || ($entry->{'URL'} && $entry->{'URL'} =~ /^(?:db:album|file:)/) ) {
 			$entry->{'icon'} = $class->icon($entry->{'URL'});
 		}
 
@@ -148,6 +150,8 @@ sub _loadOldFavorites {
 	my $toplevel = $class->toplevel;
 
 	main::INFOLOG && $log->info("No opml favorites file found - loading old favorites");
+
+	require Slim::Utils::Prefs::OldPrefs;
 
 	my @urls   = @{Slim::Utils::Prefs::OldPrefs->get('favorite_urls')   || []};
 	my @titles = @{Slim::Utils::Prefs::OldPrefs->get('favorite_titles') || []} ;
@@ -180,9 +184,95 @@ sub xmlbrowser {
 
 	my $hash = $class->SUPER::xmlbrowser;
 
+	# optionally let the user browse into local favorite items
+	if ( !$prefs->get('dont_browsedb')) {
+		$class->_prepareDbItems($hash->{'items'});
+	}
+	
 	$hash->{'favorites'} = 1;
 
 	return $hash;
+}
+
+my $dbBrowseModes;
+
+sub _prepareDbItems {
+	my ( $class, $items ) = @_;
+
+	foreach my $item (@$items) {
+		if ( $item->{'url'} =~ /^db:(\w+)\.(\w+)=(.+)/ ) {
+			my ($class, $key, $value) = ($1, $2, $3);
+			
+			$class = ucfirst($class);
+
+			$dbBrowseModes ||= {
+				Album       => [ 'album_id', \&Slim::Menu::BrowseLibrary::_tracks, {
+					wantMetadata => 1,
+					wantIndex    => 1,
+					library_id   => -1,
+				} ],
+				Contributor => [ 'artist_id', \&Slim::Menu::BrowseLibrary::_albums ],
+				Genre       => [ 'genre_id', sub {
+					# some plugins do replace artist browse modes - make sure we go to the right place
+					my ($artistHandler) = grep { $_->{id} eq 'myMusicArtists' } @{ Slim::Menu::BrowseLibrary->_getNodeList() };
+					$artistHandler->{feed}->(@_) if $artistHandler;
+				} ],
+			};
+			
+			if ( $dbBrowseModes->{$class} ) {
+				$item->{'type'} = 'playlist';
+				$item->{'play'} = $item->{'url'} . '&libraryTracks.library=-1';
+				$item->{'url'}  = \&_dbItem;
+				$item->{'passthrough'} = [{
+					class => $class,
+					key   => $key,
+					value => $value,
+				}];
+			}
+		}
+		elsif ( $item->{'items'} && ref $item->{'items'} eq 'ARRAY' && scalar @{$item->{'items'}} ) {
+			$class->_prepareDbItems($item->{'items'});
+		}
+	}
+}
+
+sub _dbItem {
+	my ($client, $callback, $args, $pt) = @_;
+	
+	my $class  = ucfirst( delete $pt->{'class'} );
+	my $key   = URI::Escape::uri_unescape(delete $pt->{'key'});
+	my $value = URI::Escape::uri_unescape(delete $pt->{'value'});
+
+	if (!utf8::is_utf8($value) && !utf8::decode($value)) { $log->warn("The following value is not UTF-8 encoded: $value"); }
+
+	if (utf8::is_utf8($value)) {
+		utf8::decode($value);
+		utf8::encode($value);
+	}
+	
+	if ( my $dbBrowseMode = $dbBrowseModes->{$class} ) {
+		my $obj = Slim::Schema->single( ucfirst($class), { $key => $value } );
+	
+		if ($obj && $obj->id) {
+			$pt->{'searchTags'} = [ $dbBrowseMode->[0] . ':' . $obj->id, 'library_id:-1' ];
+			
+			while ( my ($k, $v) = each %{ $dbBrowseMode->[2] || {} } ) {
+				$pt->{$k} = $v
+			}
+			
+			return $dbBrowseMode->[1]->($client, $callback, $args, $pt);
+		}
+	}
+	
+	# something went wrong
+	# XXX - better error handling
+	$callback->({
+		items => [ {
+			type  => 'text',
+			title => Slim::Utils::Strings::cstring($client, 'EMPTY'),
+		} ],
+		total => 1
+	});
 }
 
 sub all {

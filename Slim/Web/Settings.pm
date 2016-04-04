@@ -135,6 +135,11 @@ Complex handling and processing of specialised prefs should be done in the subcl
 sub handler {
 	my ($class, $client, $paramRef, $pageSetup) = @_;
 
+	# some settings change required a rescan, and user did confirm it
+	if (Slim::Utils::Prefs::preferences('server')->get('dontTriggerScanOnPrefChange') && Slim::Music::Import->hasScanTask && $paramRef->{'doRescanNow'}) {
+		Slim::Music::Import->nextScanTask();
+	}
+
 	# don't display player preference pane if it doesn't exist for the player (eg. Display for an SBR)
 	# redirect to basic settings instead
 	if (defined $client && !$class->validFor($client)) {
@@ -179,6 +184,16 @@ sub handler {
 	if ($prefsClass) {
 		$paramRef->{'namespace'} = $prefsClass->namespace;
 	}
+	
+	# ask the user to run a scan
+	if (Slim::Utils::Prefs::preferences('server')->get('dontTriggerScanOnPrefChange') && Slim::Music::Import->hasScanTask && !$paramRef->{'warning'} && !Slim::Music::Import->stillScanning()) {
+		$paramRef->{'rescanUrl'} = $paramRef->{webroot} . $paramRef->{path} . '?doRescanNow=1';
+		$paramRef->{'rescanUrl'} .= '&rand=' . $paramRef->{'rand'} if $paramRef->{'rand'};
+
+		$paramRef->{'warning'} = '<span id="rescanWarning">'
+			. Slim::Utils::Strings::string('SETUP_SCAN_ON_PREF_CHANGE_PROMPT', $paramRef->{'rescanUrl'})
+			. '</span>';
+	}
 
 	if ($paramRef->{'saveSettings'} && !$paramRef->{'warning'}) {
 		$paramRef->{'warning'} = Slim::Utils::Strings::string('SETUP_CHANGES_SAVED');
@@ -200,6 +215,7 @@ sub handler {
 		grep { 
 			if (/ITUNES/) { Slim::Utils::PluginManager->isEnabled('Slim::Plugin::iTunes::Plugin') }
 			elsif (/PLUGIN_PODCAST/) { Slim::Utils::PluginManager->isEnabled('Slim::Plugin::Podcast::Plugin') }
+			elsif (/SQUEEZENETWORK_SETTINGS/) { !main::NOMYSB }
 			else { 1 }
 		}
 		(

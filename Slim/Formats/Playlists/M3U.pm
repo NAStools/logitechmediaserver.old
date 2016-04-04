@@ -117,6 +117,10 @@ sub read {
 		next if $entry =~ /^#/;
 		next if $entry =~ /#CURTRACK/;
 		next if $entry eq "";
+		
+		# if an invalid playlist is downloaded as HTML, ignore it
+		last if $entry =~ /^<(?:!DOCTYPE\s*)?html/;
+		next if $entry =~ /^</;
 
 		$entry =~ s|$LF||g;
 
@@ -138,17 +142,8 @@ sub read {
 		
 		if ($class->playlistEntryIsValid($trackurl, $url)) {
 
-			main::DEBUGLOG && $log->debug("    valid entry: $trackurl");
+			push @items, $class->_item($trackurl, $artist, $album, $title, $secs, $url);
 
-			push @items, $class->_updateMetaData( $trackurl, {
-				'TITLE'  => $title,
-				'ALBUM'  => $album,
-				'ARTIST' => $artist,
-				'SECS'   => ( defined $secs && $secs > 0 ) ? $secs : undef,
-			} );
-
-			# reset the title
-			($secs, $artist, $album, $title, $trackurl) = ();
 		}
 		else {
 			# Check if the playlist entry is relative to audiodir
@@ -158,23 +153,16 @@ sub read {
 				$trackurl = Slim::Utils::Misc::fixPath($entry, $audiodir);
 				
 				if ($class->playlistEntryIsValid($trackurl, $url)) {
-	
-					main::DEBUGLOG && $log->debug("    valid entry: $trackurl");
-	
-					push @items, $class->_updateMetaData( $trackurl, {
-						'TITLE'  => $title,
-						'ALBUM'  => $album,
-						'ARTIST' => $artist,
-						'SECS'   => ( defined $secs && $secs > 0 ) ? $secs : undef,
-					} );
+
+					push @items, $class->_item($trackurl, $artist, $album, $title, $secs, $url);
 					
 					last;
 				}
-	
-				# reset the title
-				($secs, $artist, $album, $title, $trackurl) = ();
 			}
 		}
+
+		# reset the title
+		($secs, $artist, $album, $title, $trackurl) = ();
 	}
 
 	if ( main::INFOLOG && $log->is_info ) {
@@ -184,6 +172,19 @@ sub read {
 	close($fh);
 
 	return @items;
+}
+
+sub _item {
+	my ($class, $trackurl, $artist, $album, $title, $secs, $playlistUrl) = @_;
+
+	main::DEBUGLOG && $log->debug("    valid entry: $trackurl");
+	
+	return $class->_updateMetaData( $trackurl, {
+		'TITLE'  => $title,
+		'ALBUM'  => $album,
+		'ARTIST' => $artist,
+		'SECS'   => ( defined $secs && $secs > 0 ) ? $secs : undef,
+	}, $playlistUrl );
 }
 
 sub readCurTrackForM3U {

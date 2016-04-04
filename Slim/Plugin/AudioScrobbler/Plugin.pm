@@ -55,7 +55,7 @@ my $log = Slim::Utils::Log->addLogCategory( {
 } );
 
 use constant HANDSHAKE_URL => 'http://post.audioscrobbler.com/';
-use constant CLIENT_ID     => main::SLIM_SERVICE ? 'snw' : 'ss7';
+use constant CLIENT_ID     => 'ss7';
 use constant CLIENT_VER    => 'sc' . $::VERSION;
 
 sub getDisplayName {
@@ -86,17 +86,19 @@ sub initPlugin {
 	);
 	
 	# Track Info item for loving tracks
-	Slim::Menu::TrackInfo->registerInfoProvider( lfm_love => (
-		before => 'top',
-		func   => \&infoLoveTrack,
-	) );
-	
-	# A way for other things to notify us the user loves a track
-	Slim::Control::Request::addDispatch(['audioscrobbler', 'loveTrack', '_url'],
-		[0, 1, 1, \&loveTrack]);
-	
-	Slim::Control::Request::addDispatch(['audioscrobbler', 'banTrack', '_url', '_skip'],
-		[0, 1, 1, \&banTrack]);
+	if (!main::NOMYSB) {
+		Slim::Menu::TrackInfo->registerInfoProvider( lfm_love => (
+			before => 'top',
+			func   => \&infoLoveTrack,
+		) );
+		
+		# A way for other things to notify us the user loves a track
+		Slim::Control::Request::addDispatch(['audioscrobbler', 'loveTrack', '_url'],
+			[0, 1, 1, \&loveTrack]);
+		
+		Slim::Control::Request::addDispatch(['audioscrobbler', 'banTrack', '_url', '_skip'],
+			[0, 1, 1, \&banTrack]);
+	}
 	
 	Slim::Control::Request::addDispatch([ 'audioscrobbler', 'settings' ],
 		[1, 1, 0, \&jiveSettingsMenu]);
@@ -346,7 +348,7 @@ sub _handshakeOK {
 	}
 	
 	if ( $error ) {
-		$log->error($error) unless main::SLIM_SERVICE;	# error message comes without username - useless noise on mysb.com
+		$log->error($error);
 		if ( $params->{ecb} ) {
 			$params->{ecb}->($error);
 		}
@@ -403,10 +405,6 @@ sub newsongCallback {
 
 	# Check if this player has an account selected
 	if ( ! (my $account = $prefs->client($client)->get('account')) ) {
-		
-		# set a zero value so we don't need to query the DB any more in the future
-		$prefs->client($client)->set('account', 0) if main::SLIM_SERVICE && !defined $account;
-		
 		return ;
 	}
 	
@@ -415,19 +413,7 @@ sub newsongCallback {
 		return unless Slim::Player::Sync::isMaster($client);
 	}
 	
-	my $accounts = getAccounts($client);
-	
-	my $enable_scrobbling;
-	
-	if ( main::SLIM_SERVICE ) {
-		# Get enable_scrobbling from the user_prefs table
-		$enable_scrobbling = $prefs->client($client)->get( 'enable_scrobbling', undef, 'UserPref' );
-	}
-	else {
-		$enable_scrobbling = $prefs->get('enable_scrobbling');
-	}
-	
-	return unless $enable_scrobbling && scalar @{$accounts};
+	return unless $prefs->get('enable_scrobbling') && scalar @{ getAccounts($client) };
 
 	my $url   = Slim::Player::Playlist::url($client);
 	my $track = Slim::Schema->objectForUrl( { url => $url } );
@@ -554,41 +540,24 @@ sub submitNowPlaying {
 		return;
 	}
 	
-	my $artist   = $track->artistName || '';
-	my $album    = $track->album  ? $track->album->name  : '';
-	my $title    = $track->title;
-	my $tracknum = $track->tracknum || '';
-	my $duration = $track->secs;
+	my $meta = _getMetadata($client, $track);
 	
-	if ( $track->remote ) {
-		my $handler = Slim::Player::ProtocolHandlers->handlerForURL( $track->url );
-		if ( $handler && $handler->can('getMetadataFor') ) {
-			# this plugin provides track metadata, i.e. Pandora, Rhapsody
-			my $meta  = $handler->getMetadataFor( $client, $track->url, 'forceCurrent' );
-			$artist   = $meta->{artist};
-			$album    = $meta->{album} || '';
-			$title    = $meta->{title};
-			$tracknum = $meta->{tracknum} || '';
-			$duration = $meta->{duration} || $track->secs;
-			
-			# Handler must return at least artist and title
-			unless ( $meta->{artist} && $meta->{title} ) {
-				main::DEBUGLOG && $log->debug( "Protocol Handler didn't return an artist and title for " . $track->url . ", ignoring" );
-				return;
-			}
-		}
-		else {
-			main::DEBUGLOG && $log->debug( 'Ignoring remote URL ' . $track->url );
-			return;
-		}
+	if (!$meta) {
+		main::DEBUGLOG && $log->debug( 'Ignoring remote URL ' . $track->url );
+		return;
+	}
+		
+	elsif ( $meta->{msg} ) {
+		main::DEBUGLOG && $log->debug( $meta->{msg} );
+		return;
 	}
 	
 	my $post = 's=' . $client->master->pluginData('session_id')
-		. '&a=' . uri_escape_utf8( $artist )
-		. '&t=' . uri_escape_utf8( $title )
-		. '&b=' . uri_escape_utf8( $album )
-		. '&l=' . ( $duration ? int( $duration ) : '' )
-		. '&n=' . $tracknum
+		. '&a=' . uri_escape_utf8( $meta->{artist} )
+		. '&t=' . uri_escape_utf8( $meta->{title} )
+		. '&b=' . uri_escape_utf8( $meta->{album} )
+		. '&l=' . ( $meta->{duration} ? int( $meta->{duration} ) : '' )
+		. '&n=' . $meta->{tracknum}
 		. '&m=' . ( $track->musicbrainz_id || '' );
 	
 	main::DEBUGLOG && $log->debug("Submitting Now Playing track to Last.fm: $post");
@@ -685,60 +654,42 @@ sub checkScrobble {
 	# Make sure the track is still the currently playing track
 	my $cururl = Slim::Player::Playlist::url($client);
 	
-	my $artist   = $track->artistName || '';
-	my $album    = $track->album  ? $track->album->name  : '';
-	my $title    = $track->title;
-	my $tracknum = $track->tracknum || '';
-	my $duration = $track->secs;
-	my $source   = 'P';
+	my $meta = _getMetadata($client, $track, $cururl);
+	
+	my $source = 'P';
 	
 	if ( $track->remote ) {
-		my $handler = Slim::Player::ProtocolHandlers->handlerForURL( $cururl );
-		if ( $handler && $handler->can('getMetadataFor') ) {
-			# this plugin provides track metadata, i.e. Pandora, Rhapsody
-			my $meta  = $handler->getMetadataFor( $client, $cururl, 'forceCurrent' );			
-			$artist   = $meta->{artist};
-			$album    = $meta->{album} || '';
-			$title    = $meta->{title};
-			$tracknum = $meta->{tracknum} || '';
-			$duration = $meta->{duration} || $track->secs;
-			
-			# Handler must return at least artist and title
-			unless ( $meta->{artist} && $meta->{title} ) {
-				main::DEBUGLOG && $log->debug( "Protocol Handler didn't return an artist and title for $cururl, ignoring" );
-				return;
-			}
-			
-			# Make sure user is still listening to the same track
-			if ( $track->stash->{_plugin_title} && $title ne $track->stash->{_plugin_title} ) {
-				main::DEBUGLOG && $log->debug( $track->stash->{_plugin_title} . ' - Currently playing track has changed, not scrobbling' );
-				return;
-			}
-			
-			# Get the source type from the plugin
-			if ( $handler->can('audioScrobblerSource') ) {
-				$source = $handler->audioScrobblerSource( $client, $cururl );
-				
-				# Ignore radio tracks if requested, unless rating = L
-				if ( !defined $rating || $rating ne 'L' ) {
-					my $include_radio;
-					if ( main::SLIM_SERVICE ) {
-						$include_radio = $prefs->client($client)->get( 'include_radio', undef, 'UserPref' );
-					}
-					else {
-						$include_radio = $prefs->get('include_radio');
-					}
-					
-					if ( defined $include_radio && !$include_radio && $source =~ /^[RE]$/ ) {
-						main::DEBUGLOG && $log->debug("Ignoring radio URL $cururl, scrobbling of radio is disabled");
-						return;
-					}
-				}
-			}
-		}
-		else {
+		if (!$meta) {
 			main::DEBUGLOG && $log->debug( 'Ignoring remote URL ' . $cururl );
 			return;
+		}
+			
+		# Handler must return at least artist and title
+		elsif ( $meta->{msg} ) {
+			main::DEBUGLOG && $log->debug( $meta->{msg} );
+			return;
+		}
+			
+		# Make sure user is still listening to the same track
+		elsif ( $track->stash->{_plugin_title} && $meta->{title} ne $track->stash->{_plugin_title} ) {
+			main::DEBUGLOG && $log->debug( $track->stash->{_plugin_title} . ' - Currently playing track has changed, not scrobbling' );
+			return;
+		}
+		
+		my $handler = Slim::Player::ProtocolHandlers->handlerForURL( $cururl );
+		# Get the source type from the plugin
+		if ( $handler->can('audioScrobblerSource') ) {
+			$source = $handler->audioScrobblerSource( $client, $cururl );
+			
+			# Ignore radio tracks if requested, unless rating = L
+			if ( !defined $rating || $rating ne 'L' ) {
+				my $include_radio = $prefs->get('include_radio');
+				
+				if ( defined $include_radio && !$include_radio && $source =~ /^[RE]$/ ) {
+					main::DEBUGLOG && $log->debug("Ignoring radio URL $cururl, scrobbling of radio is disabled");
+					return;
+				}
+			}
 		}
 	}
 	elsif ( $cururl ne $track->url ) {
@@ -754,7 +705,7 @@ sub checkScrobble {
 	if ( $songtime < $checktime ) {
 		my $diff = $checktime - $songtime;
 		
-		main::DEBUGLOG && $log->debug( "$title - Not yet reached $checktime playback seconds, waiting $diff more seconds" );
+		main::DEBUGLOG && $log->debug( $meta->{title} . " - Not yet reached $checktime playback seconds, waiting $diff more seconds" );
 		
 		Slim::Utils::Timers::killTimers( $client, \&checkScrobble );
 		Slim::Utils::Timers::setTimer(
@@ -769,27 +720,27 @@ sub checkScrobble {
 		return;
 	}
 	
-	main::DEBUGLOG && $log->debug( "$title - Queueing track for scrobbling in $checktime seconds" );
+	main::DEBUGLOG && $log->debug( $meta->{title} . " - Queueing track for scrobbling in $checktime seconds" );
 	
 	my $queue = getQueue($client);
 	
 	push @{$queue}, {
 		_url => $cururl,
-		a    => uri_escape_utf8( $artist ),
-		t    => uri_escape_utf8( $title ),
+		a    => uri_escape_utf8( $meta->{artist} ),
+		t    => uri_escape_utf8( $meta->{title} ),
 		i    => int( $client->currentPlaylistChangeTime() ),
 		o    => $source,
 		r    => $rating || '', # L for thumbs-up for Pandora/Lastfm, B for Lastfm ban, S for Lastfm skip
-		l    => ( $duration ? int( $duration ) : '' ),
-		b    => uri_escape_utf8( $album ),
-		n    => $tracknum,
+		l    => ( $meta->{duration} ? int( $meta->{duration} ) : '' ),
+		b    => uri_escape_utf8( $meta->{album} ),
+		n    => $meta->{tracknum},
 		m    => ( $track->musicbrainz_id || '' ),
 	};
 	
 	setQueue( $client, $queue );
 	
 	# If the URL wasn't a Last.fm station and the user loved the track, report the Love
-	if ( $rating && $rating eq 'L' && $cururl !~ /^lfm/ ) {
+	if ( !main::NOMYSB && $rating && $rating eq 'L' && $cururl !~ /^lfm/ ) {
 		submitLoveTrack( $client, $queue->[-1] );
 	}
 	
@@ -934,37 +885,65 @@ sub submitScrobble {
 sub stillPlaying {
 	my ( $client, $track, $item ) = @_;
 	
-	my $artist   = $track->artistName || '';
-	my $album    = $track->album  ? $track->album->name  : '';
-	my $title    = $track->title;
-	
 	# Bug 12240: if we have stopped (probably at the end of the playlist) then we are not still playing
 	if ($client->isStopped()) {
 		return 0;
 	}
+
+	my $meta = _getMetadata($client, $track) || return 1;
 	
-	if ( $track->remote ) {
-		my $handler = Slim::Player::ProtocolHandlers->handlerForURL( $track->url );
-		if ( $handler && $handler->can('getMetadataFor') ) {
-			# this plugin provides track metadata, i.e. Pandora, Rhapsody
-			my $meta  = $handler->getMetadataFor( $client, $track->url, 'forceCurrent' );			
-			$artist   = $meta->{artist};
-			$album    = $meta->{album};
-			$title    = $meta->{title};
-		}
-	}
-	
-	if ( $title ne uri_unescape( $item->{t} ) ) {
+	if ( $meta->{title} ne uri_unescape( $item->{t} ) ) {
 		return 0;
 	}
-	elsif ( $album ne uri_unescape( $item->{b} ) ) {
+	elsif ( $meta->{album} ne uri_unescape( $item->{b} ) ) {
 		return 0;
 	}
-	elsif ( $artist ne uri_unescape( $item->{a} ) ) {
+	elsif ( $meta->{artist} ne uri_unescape( $item->{a} ) ) {
 		return 0;
 	}
 	
 	return 1;
+}
+
+sub _getMetadata {
+	my ($client, $track, $url) = @_;
+	
+	$url ||= $track->url;
+
+	my $meta = {
+		artist   => $track->artistName || '',
+		album    => ($track->album && $track->album->get_column('title')) || '',
+		title    => $track->title,
+		tracknum => $track->tracknum || '',
+		duration => $track->secs,
+	};	
+	
+	if ( $track->remote ) {
+		my $handler = Slim::Player::ProtocolHandlers->handlerForURL( $url );
+		if ( $handler && $handler->can('getMetadataFor') ) {
+			# this plugin provides track metadata, i.e. Pandora, Rhapsody
+			my $meta2 = $handler->getMetadataFor( $client, $url, 'forceCurrent' );	
+			
+			# Handler must return at least artist and title
+			unless ( $meta2->{artist} && $meta2->{title} ) {
+				return {
+					msg => "Protocol Handler didn't return an artist and title for $url, ignoring"
+				};
+			}
+			
+			$meta->{artist}   = $meta2->{artist};
+			$meta->{album}    = $meta2->{album} || '';
+			$meta->{title}    = $meta2->{title};
+			$meta->{tracknum} = $meta2->{tracknum} || '';
+			$meta->{duration} = $meta2->{duration} || $track->secs;
+		}
+		else {
+			main::DEBUGLOG && $log->debug( 'Ignoring remote URL ' . $url );
+			return;
+		}
+	}
+
+	return $meta;
 }
 
 sub _submitScrobbleOK {
@@ -1043,7 +1022,7 @@ sub _submitScrobbleError {
 	);
 }
 
-sub loveTrack {
+sub loveTrack { if (!main::NOMYSB) {
 	my $request = shift;
 	my $client  = $request->client || return;
 	my $url     = $request->getParam('_url');
@@ -1051,15 +1030,7 @@ sub loveTrack {
 	# Ignore if not Scrobbling
 	return if !$prefs->client($client)->get('account');
 	
-	my $enable_scrobbling;
-	if ( main::SLIM_SERVICE ) {
-		$enable_scrobbling  = $prefs->client($client)->get('enable_scrobbling');
-	}
-	else {
-		$enable_scrobbling  = $prefs->get('enable_scrobbling');
-	}
-	
-	return unless $enable_scrobbling;
+	return unless $prefs->get('enable_scrobbling');
 	
 	main::DEBUGLOG && $log->debug( "Loved: $url" );
 	
@@ -1091,9 +1062,9 @@ sub loveTrack {
 	checkScrobble( $client, $track, 0, 'L' );
 	
 	return 1;
-}
+} }
 
-sub submitLoveTrack {
+sub submitLoveTrack { if (!main::NOMYSB) {
 	my ( $client, $item ) = @_;
 	
 	my $username = $prefs->client($client)->get('account');
@@ -1132,9 +1103,9 @@ sub submitLoveTrack {
 	main::DEBUGLOG && $log->debug( 'Submitting loved track to Last.fm' );
 	
 	$http->get( $url );
-}
+} }
 
-sub banTrack {
+sub banTrack { if (!main::NOMYSB) {
 	my $request = shift;
 	my $client  = $request->client || return;
 	my $url     = $request->getParam('_url');
@@ -1151,15 +1122,7 @@ sub banTrack {
 	# Ignore if not Scrobbling
 	return if !$prefs->client($client)->get('account');
 	
-	my $enable_scrobbling;
-	if ( main::SLIM_SERVICE ) {
-		$enable_scrobbling  = $prefs->client($client)->get('enable_scrobbling');
-	}
-	else {
-		$enable_scrobbling  = $prefs->get('enable_scrobbling');
-	}
-	
-	return unless $enable_scrobbling;
+	return unless $prefs->get('enable_scrobbling');
 
 	main::DEBUGLOG && $log->debug( "Banned: $url" );
 	
@@ -1186,7 +1149,7 @@ sub banTrack {
 	checkScrobble( $client, $track, 0, 'B' );
 	
 	return 1;
-}	
+} }
 
 # Return whether or not the given track will be scrobbled
 sub canScrobble {
@@ -1194,16 +1157,8 @@ sub canScrobble {
 	
 	# Ignore if not Scrobbling
 	return if !$prefs->client($client)->get('account');
-
-	my $enable_scrobbling;
-	if ( main::SLIM_SERVICE ) {
-		$enable_scrobbling  = $prefs->client($client)->get('enable_scrobbling');
-	}
-	else {
-		$enable_scrobbling  = $prefs->get('enable_scrobbling');
-	}
 	
-	return unless $enable_scrobbling;
+	return unless $prefs->get('enable_scrobbling');
 	
 	if ( $track->remote ) {
 		my $handler = Slim::Player::ProtocolHandlers->handlerForURL( $track->url );
@@ -1239,49 +1194,22 @@ sub canScrobble {
 sub getAccounts {
 	my $client = shift;
 	
-	my $accounts;
-	
-	if ( main::SLIM_SERVICE ) {
-		$accounts = $prefs->client($client)->get( 'accounts', undef, 'UserPref' ) || [];
-	
-		if ( !ref $accounts ) {
-			$accounts = from_json( $accounts );
-		}
-	}
-	else {	
-		$accounts = $prefs->get('accounts') || [];
-	}
-	
-	return $accounts;
+	return $prefs->get('accounts') || [];
 }
 
 sub getQueue {
 	my $client = shift;
 	
-	my $queue;
-	
-	if ( main::SLIM_SERVICE ) {
-		$queue = SDI::Service::Model::ScrobbleQueue->get( $client->playerData->id );
-	}
-	else {
-		$queue = $prefs->client($client)->get('queue') || [];
-	}
-	
-	return $queue;
+	return $prefs->client($client)->get('queue') || [];
 }
 
 sub setQueue {
 	my ( $client, $queue ) = @_;
 	
-	if ( main::SLIM_SERVICE ) {
-		SDI::Service::Model::ScrobbleQueue->set( $client->playerData->id, $queue );
-	}
-	else {
-		$prefs->client($client)->set( queue => $queue );
-	}
+	$prefs->client($client)->set( queue => $queue );
 }
 
-sub infoLoveTrack {
+sub infoLoveTrack { if (!main::NOMYSB) {
 	my ( $client, $url, $track, $remoteMeta ) = @_;
 
 	return unless $client;
@@ -1304,9 +1232,9 @@ sub infoLoveTrack {
 		passthrough => [ $url ],
 		favorites   => 0,
 	};
-}
+} }
 
-sub infoLoveTrackSubmit {
+sub infoLoveTrackSubmit { if (!main::NOMYSB) {
 	my ( $client, $callback, undef, $url ) = @_;
 	
 	$client->execute( [ 'audioscrobbler', 'loveTrack', $url ] );
@@ -1317,7 +1245,7 @@ sub infoLoveTrackSubmit {
 		showBriefly => 0,
 		favorites   => 0,
 	} );
-}
+} }
 		
 sub jiveSettings {
 

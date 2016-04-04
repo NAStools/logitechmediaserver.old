@@ -54,9 +54,36 @@ sub initDetails {
 		$class->{osDetails}->{'osName'} = 'Windows 2008 Server R2';
 	}
 
-	# The version numbers for Windows 8 and Windows Server 2012 are identical; the PRODUCTTYPE field must be used to differentiate between them.
+	# The version numbers for Windows 8 onwards are identical, Win32.pm has not been updated to cover these
+	# https://msdn.microsoft.com/en-us/library/windows/desktop/ms724832(v=vs.85).aspx
 	elsif ($major == 6 && $minor == 2) {
-		$class->{osDetails}->{'osName'} = $producttype != 1 ? 'Windows 2012 Server' : 'Windows 8';
+		
+		if ( my $wmi = Win32::OLE->GetObject( "WinMgmts://./root/cimv2" ) ) {
+			if ( my $list = $wmi->InstancesOf( "Win32_OperatingSystem" ) ) {
+
+				for my $item ( Win32::OLE::in $list ) {
+
+					my $version = $item->{Version};
+					if ( my ($major, $minor, $build) = $version =~ /(\d+)\.(\d+)\.(\d+)/ ) {
+						if ($major == 6 && $minor == 2) {
+							$class->{osDetails}->{'osName'} = $producttype != 1 ? 'Windows 2012 Server' : 'Windows 8';
+						}
+						elsif ($major == 6 && $minor == 3) {
+							$class->{osDetails}->{'osName'} = $producttype != 1 ? 'Windows 2012 Server R2' : 'Windows 8.1';
+						}
+						elsif ($major == 10 && $minor == 0) {
+							$class->{osDetails}->{'osName'} = $producttype != 1 ? 'Windows 2016 Server' : 'Windows 10';
+						}
+						else {
+							main::INFOLOG && warn "Unknown Windows version - Major: $major, Minor: $minor\n";
+							$class->{osDetails}->{'osName'} = sprintf('Windows %s(2.%s.%s, %s)', ($producttype != 1 ? 'Server ' : ''), $major, $minor, $producttype);
+						}
+						last;
+					}
+				}
+
+			}
+		}
 	}
 
 	# Windows 2003 && suitemask 0x00008000 -> WHS
@@ -105,6 +132,8 @@ sub initPrefs {
 	$prefs->{wizardDone} = 1;
 }
 
+sub canDBHighMem { 1 }
+
 sub postInitPrefs {
 	my ($class, $prefs) = @_;
 
@@ -123,7 +152,7 @@ sub dirsFor {
 	
 	my @dirs = $class->SUPER::dirsFor($dir);
 	
-	if ($dir =~ /^(?:strings|revision|convert|types)$/) {
+	if ($dir =~ /^(?:strings|revision|convert|types|repositories)$/) {
 
 		push @dirs, $Bin;
 
@@ -642,7 +671,6 @@ sub getShortcut {
 	return ( $name, $class->fileURLFromShortcut($path) );
 }
 
-
 =head2 setPriority( $priority )
 
 Set the priority for the server. $priority should be -20 to 20
@@ -820,7 +848,7 @@ sub cleanupTempDirs {
 sub getUpdateParams {
 	my ($class, $url) = @_;
 
-	return if main::SLIM_SERVICE || main::SCANNER;
+	return if main::SCANNER;
 	
 	if (!$PerlSvc::VERSION) {
 		Slim::Utils::Log::logger('server.update')->info("Running Logitech Media Server from the source - don't download the update.");
@@ -892,6 +920,9 @@ sub restartServer {
 		) {
 			$log->error("Couldn't restart Logitech Media Server service (squeezesvc)");
 		}
+		else {
+			return 1;
+		}
 	}
 	
 	elsif ($PerlSvc::VERSION) {
@@ -900,13 +931,16 @@ sub restartServer {
 		if (open(RESTART, ">$restartFlag")) {
 			close RESTART;
 			main::stopServer();
+			return 1;
 		}
 		
 		else {
 			$log->error("Can't write restart flag ($restartFlag) - don't shut down");
 		}
 	}
-};
+
+	return;
+}
 
 sub canRestartServer { return $PerlSvc::VERSION ? 1 : 0; }
 

@@ -17,8 +17,6 @@ use JSON::XS::VersionOneAndTwo;
 use Slim::Utils::Log;
 use Slim::Utils::Strings qw(string);
 use Slim::Utils::Prefs;
-use Slim::Plugin::UPnP::Common::Utils qw(absURL);
-use Slim::Plugin::UPnP::MediaServer::ContentDirectory;
 
 my $prefs = preferences('server');
 
@@ -34,6 +32,9 @@ sub initPlugin {
 	my $class = shift;
 	
 	return unless $class->condition;
+
+#	require Slim::Plugin::UPnP::Common::Utils;
+	require Slim::Plugin::UPnP::MediaServer::ContentDirectory;
 
 	$class->SUPER::initPlugin(
 		feed   => \&handleFeed,
@@ -51,8 +52,7 @@ sub condition {
 	
 	return $enabled if defined $enabled;
 	
-	# not checking the noupnp pref here, it's a web UI setting for the old client only
- 	if ( !main::IMAGE ) {
+ 	if ( !(main::IMAGE && main::MEDIASUPPORT) ) {
 		$enabled = 0;
 		return 0;
 	}	

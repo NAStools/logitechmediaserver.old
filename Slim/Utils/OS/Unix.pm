@@ -52,7 +52,7 @@ sub dirsFor {
 	my @dirs = $class->SUPER::dirsFor($dir);
 	
 	# some defaults
-	if ($dir =~ /^(?:strings|revision|convert|types)$/) {
+	if ($dir =~ /^(?:strings|revision|convert|types|repositories)$/) {
 
 		push @dirs, $Bin;
 
@@ -69,7 +69,7 @@ sub dirsFor {
 		push @dirs, '';
 
 	# we don't want these values to return a(nother) value
-	} elsif ($dir =~ /^(?:libpath|mysql-language|updates)$/) {
+	} elsif ($dir =~ /^(?:libpath|mysql-language)$/) {
 
 	} elsif ($dir eq 'prefs' && $::prefsdir) {
 		
@@ -127,5 +127,24 @@ sub migratePrefsFolder {
 
 # leave log rotation to the system
 sub logRotate {}
+
+sub canRestartServer { 1 }
+
+sub restartServer {
+
+	my $class = shift;
+	my ($progFile, $progArgs)  = @_;
+
+	# Prefer to execute the script directly if possible, otherwise
+	# invoke the interpreter to start the script.
+	#
+	# The difference between the two approaches is visible on
+	# some systems in the process title. See the process name
+	# in /proc/$$/stat on Linux as an example.
+
+	my $execProg = (-x $progFile) ? $progFile : $^X;
+
+	return exec($execProg, $progFile, @$progArgs);
+}
 
 1;

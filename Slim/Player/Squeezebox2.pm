@@ -45,6 +45,7 @@ our $defaultPrefs = {
 	'transitionDuration' => 10,
 	'transitionSmart'    => 1,
 	'replayGainMode'     => 0,
+	'remoteReplayGain'   => -5,
 	'disableDac'         => 0,
 	'minSyncAdjust'      => 10,	# ms
 	'snLastSyncUp'       => -1,
@@ -52,6 +53,8 @@ our $defaultPrefs = {
 	'snSyncInterval'     => 30,
 	'outputChannels'     => 0,
 };
+
+$prefs->setValidate({ 'validator' => 'numlimit', 'low' => -20, 'high' => 20 }, 'remoteReplayGain');
 
 # Keep track of direct stream redirects
 our $redirects = {};
@@ -294,7 +297,11 @@ sub volume {
 		my $preamp = 255 - int( 2 * ( $prefs->client($client)->get('preampVolumeControl') || 0 ) );
 
 		my $data;
-		if (defined($client->sequenceNumber())) {
+		if (defined($client->controllerSequenceId())) {
+			$data = pack('NNCCNNNa6', $oldGain, $oldGain, $dvc, $preamp, $newGain, $newGain,
+				($client->controllerSequenceNumber() || 0), $client->controllerSequenceId());
+		}
+		elsif (defined($client->sequenceNumber())) {
 			$data = pack('NNCCNNN', $oldGain, $oldGain, $dvc, $preamp, $newGain, $newGain, $client->sequenceNumber());
 		}
 		else {

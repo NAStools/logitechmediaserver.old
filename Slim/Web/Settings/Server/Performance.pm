@@ -24,7 +24,7 @@ sub page {
 
 sub prefs {
 	my @prefs = ( $prefs, qw(dbhighmem disableStatistics serverPriority scannerPriority 
- 				precacheArtwork maxPlaylistLength) );
+ 				precacheArtwork maxPlaylistLength useLocalImageproxy dontTriggerScanOnPrefChange) );
  	push @prefs, qw(autorescan autorescan_stat_interval) if Slim::Utils::OSDetect::getOS->canAutoRescan;
  	return @prefs;
 }
@@ -43,18 +43,40 @@ sub handler {
 				Slim::Utils::AutoRescan->shutdown;
 			}
 		}
+		
+		my $specs = Storable::dclone($prefs->get('customArtSpecs'));
+		
+		my @delete = @{ ref $paramRef->{delete} eq 'ARRAY' ? $paramRef->{delete} : [ $paramRef->{delete} ] };
+	
+		for my $deleteItem (@delete) {
+			delete $specs->{$deleteItem};
+		}
+	
+		$prefs->set( customArtSpecs => $specs );
+		
 	}
 	
 	# Restart message if dbhighmem is changed
 	my $curmem = $prefs->get('dbhighmem') || 0;
 	if ( $paramRef->{pref_dbhighmem} && $paramRef->{pref_dbhighmem} != $curmem ) {
 		# Trigger restart required message
-		$paramRef = Slim::Web::Settings::Server::Plugins->getRestartMessage($paramRef, Slim::Utils::Strings::string('PLUGINS_CHANGED'));
+		$paramRef = Slim::Web::Settings::Server::Plugins->getRestartMessage($paramRef, Slim::Utils::Strings::string('CLEANUP_PLEASE_RESTART_SC'));
 	}
 	
 	# Restart if restart=1 param is set
 	if ( $paramRef->{restart} ) {
 		$paramRef = Slim::Web::Settings::Server::Plugins->restartServer($paramRef, 1);
+	}
+	
+	$paramRef->{imageproxies} = {
+		1 => Slim::Utils::Strings::string('SETUP_IMAGEPROXY_LOCAL'),
+	};
+	
+	$paramRef->{imageproxies}->{0} = Slim::Utils::Strings::string('SETUP_IMAGEPROXY_REMOTE') unless main::NOMYSB;
+	
+	my $externalImageProxies = Slim::Web::ImageProxy->getExternalHandlers();
+	foreach (keys %$externalImageProxies) {
+		$paramRef->{imageproxies}->{$_} = $externalImageProxies->{$_}->{desc};
 	}
 
 	$paramRef->{'options'} = {
@@ -67,6 +89,8 @@ sub handler {
 			  15 => 'SETUP_PRIORITY_LOW'
 			}->{$_} } (-20 .. 20)
 	};
+	
+	$paramRef->{pref_customArtSpecs} = $prefs->get('customArtSpecs');
 
 	return $class->SUPER::handler($client, $paramRef, $pageSetup);
 }

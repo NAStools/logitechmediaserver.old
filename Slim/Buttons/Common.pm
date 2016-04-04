@@ -39,7 +39,6 @@ use strict;
 use Scalar::Util qw(blessed);
 
 use Slim::Buttons::Alarm;
-use Slim::Buttons::SqueezeNetwork;
 use Slim::Buttons::Volume;
 use Slim::Buttons::GlobalSearch;
 use Slim::Buttons::XMLBrowser;
@@ -50,11 +49,6 @@ use Slim::Utils::Log;
 use Slim::Utils::Misc;
 use Slim::Buttons::Block;
 use Slim::Utils::Prefs;
-
-if ( main::SLIM_SERVICE ) {
-	# needed for some SN-only modes
-	require SDI::Service::Buttons::SetupWizard;
-}
 
 # hash of references to functions to call when we leave a mode
 our %leaveMode = ();
@@ -129,15 +123,16 @@ sub init {
 	Slim::Buttons::Power::init();
 	Slim::Buttons::ScreenSaver::init();
 	Slim::Buttons::GlobalSearch::init();
-	Slim::Buttons::SqueezeNetwork::init();
+	
+	if (!main::NOMYSB) {
+		require Slim::Buttons::SqueezeNetwork;
+		Slim::Buttons::SqueezeNetwork::init();
+	}
+	
 	Slim::Buttons::Synchronize::init();
 	Slim::Buttons::TrackInfo::init();
 	Slim::Buttons::RemoteTrackInfo::init();
 	Slim::Buttons::Volume::init();
-	
-	if ( main::SLIM_SERVICE ) {
-		SDI::Service::Buttons::SetupWizard::init();
-	}
 
 	addSaver('playlist', undef, undef, undef, 'SCREENSAVER_JUMP_TO_NOW_PLAYING', 'PLAY');
 }
@@ -816,7 +811,7 @@ our %functions = (
 
 					$log->error("Error: No valid url found, not adding favorite!");
 
-					if (main::DEBUGLOG && $obj) {
+					if (main::DEBUGLOG && $log->is_debug && $obj) {
 						$log->error(Data::Dump::dump($obj));
 					} else {
 						$log->logBacktrace;
@@ -1345,12 +1340,6 @@ our %functions = (
 		}
 	},
 );
-
-# Delete Browse/Search on SN
-if ( main::SLIM_SERVICE ) {
-	$functions{browse} = sub {};
-	$functions{search} = sub {};
-}
 
 sub getFunction {
 	my $client     = shift || return;
@@ -2035,12 +2024,6 @@ sub pushMode {
 
 			if ($@) {
 				logError("Couldn't execute mode exit function: $@");
-				
-				if ( main::SLIM_SERVICE ) {
-					my $name = Slim::Utils::PerlRunTime::realNameForCodeRef($exitFun);
-					$@ =~ s/"/'/g;
-					SDI::Util::Syslog::error("service=SS-Common method=${name} error=\"$@\"");
-				}
 			}
 		}
 	}
@@ -2075,12 +2058,6 @@ sub pushMode {
 
 	if ($@) {
 		logError("Couldn't push into new mode: [$setmode] !: $@");
-		
-		if ( main::SLIM_SERVICE ) {
-			my $name = Slim::Utils::PerlRunTime::realNameForCodeRef($newModeFunction);
-			$@ =~ s/"/'/g;
-			SDI::Util::Syslog::error("service=SS-Common method=${name} error=\"$@\"");
-		}
 
 		pop @{$scrollClientHash->{$client}{scrollParamsStack}};
 		pop @{$client->modeStack};
@@ -2143,12 +2120,6 @@ sub popMode {
 
 			if ($@) {
 				logError("Couldn't execute mode exit function: $@");
-				
-				if ( main::SLIM_SERVICE ) {
-					my $name = Slim::Utils::PerlRunTime::realNameForCodeRef($exitFun);
-					$@ =~ s/"/'/g;
-					SDI::Util::Syslog::error("service=SS-Common method=${name} error=\"$@\"");
-				}
 			}
 		}
 	}
@@ -2169,12 +2140,6 @@ sub popMode {
 
 		if ($@) {
 			logError("Couldn't execute setMode on pop: $@");
-			
-			if ( main::SLIM_SERVICE ) {
-				my $name = Slim::Utils::PerlRunTime::realNameForCodeRef($fun);
-				$@ =~ s/"/'/g;
-				SDI::Util::Syslog::error("service=SS-Common method=${name} error=\"$@\"");
-			}
 		}
 	}
 
@@ -2446,12 +2411,6 @@ sub _periodicUpdate {
 
 		if ($@) {
 			logError("bad screen2 lines: $@");
-			
-			if ( main::SLIM_SERVICE ) {
-				my $name = Slim::Utils::PerlRunTime::realNameForCodeRef($linefunc);
-				$@ =~ s/"/'/g;
-				SDI::Util::Syslog::error("service=SS-Common method=${name} error=\"$@\"");
-			}
 		}
 
 		$display->update($screen2, undef, 1);

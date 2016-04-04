@@ -8,13 +8,11 @@ package Slim::Web::Settings::Server::Wizard;
 use strict;
 use base qw(Slim::Web::Settings);
 use Digest::SHA1 qw(sha1_base64);
-use I18N::LangTags qw(extract_language_tags);
 use HTTP::Status qw(RC_MOVED_TEMPORARILY);
 
 use Slim::Utils::Log;
 use Slim::Utils::Prefs;
 use Slim::Utils::Timers;
-use Slim::Networking::SqueezeNetwork;
 
 my $log = Slim::Utils::Log->addLogCategory({
 	'category'     => 'wizard',
@@ -34,7 +32,7 @@ sub handler {
 	$paramRef->{languageoptions} = Slim::Utils::Strings::languageOptions();
 
 	# The hostname for mysqueezebox.com
-	$paramRef->{sn_server} = Slim::Networking::SqueezeNetwork->get_server("sn");
+	$paramRef->{sn_server} = Slim::Networking::SqueezeNetwork->get_server("sn") if !main::NOMYSB;
 
 	# make sure we only enforce the wizard at the very first startup
 	if ($paramRef->{saveSettings}) {
@@ -49,13 +47,15 @@ sub handler {
 		$paramRef->{firstTimeRun} = 1;
 
 		# try to guess the local language setting
-		# only on non-Windows systems, as the Windows installer is setting the langugae
+		# only on non-Windows systems, as the Windows installer is setting the language
 		if (!main::ISWINDOWS && !$paramRef->{saveLanguage}
 			&& defined $response->{_request}->{_headers}->{'accept-language'}) {
 
 			main::DEBUGLOG && $log->debug("Accepted-Languages: " . $response->{_request}->{_headers}->{'accept-language'});
 
-			foreach my $language (extract_language_tags($response->{_request}->{_headers}->{'accept-language'})) {
+			require I18N::LangTags;
+
+			foreach my $language (I18N::LangTags::extract_language_tags($response->{_request}->{_headers}->{'accept-language'})) {
 				$language = uc($language);
 				$language =~ s/-/_/;  # we're using zh_cn, the header says zh-cn
 	
@@ -144,7 +144,8 @@ sub handler {
 	
 	if ( $paramRef->{saveSettings} ) {
 
-		if (   $paramRef->{sn_email}
+		if (   !main::NOMYSB 
+			&& $paramRef->{sn_email}
 			&& $paramRef->{sn_password_sha}
 			&& $serverPrefs->get('sn_sync')
 		) {			
@@ -161,8 +162,9 @@ sub handler {
 		}
 	}
 	
+	
 	if ($client) {
-		$paramRef->{playericon} = Slim::Web::Settings::Player::Basic->getPlayerIcon($client);
+		$paramRef->{playericon} = Slim::Web::Settings::Player::Basic->getPlayerIcon($client,$paramRef);
 		$paramRef->{playertype} = $client->model();
 	}
 

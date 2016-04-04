@@ -28,7 +28,7 @@ use Slim::Utils::Strings;
 use Slim::Utils::Timers;
 use Slim::Player::StreamingController;
 
-if ( !main::SLIM_SERVICE && !main::SCANNER ) {
+if ( !main::SCANNER ) {
 	require Slim::Control::Request;
 	require Slim::Web::HTTP;
 }
@@ -110,6 +110,7 @@ use constant KNOB_NOACCELERATION => 0x02;
 								startirhold irtimediff irrepeattime irenable _epochirtime lastActivityTime
 								knobPos knobTime knobSync
 								sequenceNumber
+								controllerSequenceId controllerSequenceNumber
 								controller
 								bufferReady readyToStream connecting streamStartTimestamp
 								streamformat streamingsocket remoteStreamStartTime
@@ -208,6 +209,12 @@ sub new {
 		#It is used to allow the player to act as the master for the locally maintained parameter.
 		sequenceNumber          => 0,
 
+		# The (controllerSequenceId, controllerSequenceNumber) tuple is used to enable synchronization of commands 
+		# sent to the player via the server and via an additional, out-of-band mechanism (currently UDAP).
+		# It is used to enable the player to discard duplicate commands received via both channels.
+		controllerSequenceId    => undef,
+		controllerSequenceNumber=> undef,
+
 		# streaming control
 		controller              => undef,
 		bufferReady             => 0,
@@ -301,12 +308,6 @@ sub new {
 	);
 	
 	$clientHash{$id} = $client;
-	
-	# On SN, we need to fully load all the player's prefs from the database
-	# before going further
-	if ( main::SLIM_SERVICE ) {
-		$client->loadPrefs();
-	}
 
 	$client->controller(Slim::Player::StreamingController->new($client));
 
@@ -461,10 +462,6 @@ sub name {
 	} else {
 
 		$name = $prefs->client($client)->get('playername');
-		
-		if ( main::SLIM_SERVICE && $client->playerData ) {
-			$name = $client->playerData->name;
-		}
 	}
 
 	return $name;
@@ -476,9 +473,6 @@ sub name {
 # all the players ever known to this SC in finding an unused name.
 sub _makeDefaultName {
 	my $client = shift;
-	
-	# This method is not useful on SN
-	return if main::SLIM_SERVICE;
 
 	my $modelName = $client->modelName() || $client->ip;
 
@@ -514,13 +508,6 @@ sub debug {
 sub getClient {
 	my $id  = shift || return undef;
 	my $ret = $clientHash{$id};
-	
-	if ( main::SLIM_SERVICE ) {
-		# There is no point making the below lookups, which add massive
-		# amounts of DB calls when name() is called and lots of other
-		# clients are connected
-		return ($ret);
-	}
 
 	# Try a brute for match for the client.
 	if (!defined($ret)) {
@@ -560,7 +547,7 @@ sub forgetClient {
 		Slim::Utils::Alarm->forgetClient($client);
 		Slim::Utils::Timers::forgetTimer($client);
 		
-		if ( !main::SLIM_SERVICE && !main::SCANNER ) {
+		if ( !main::SCANNER ) {
 			Slim::Web::HTTP::forgetClient($client);
 		}
 		
@@ -1242,14 +1229,7 @@ sub pluginData {
 	my $namespace;
 	
 	# if called from a plugin, we automatically use the plugin's namespace for keys
-	my $package;
-	if ( main::SLIM_SERVICE ) {
-		# pluginData is called from SNClient, need to increase caller stack
-		$package = caller(1);
-	}
-	else {
-		$package = caller(0);
-	}
+	my $package = caller(0);
 	
 	if ( $package =~ /^(?:Slim::Plugin|Plugins)::(\w+)/ ) {
 		$namespace = $1;

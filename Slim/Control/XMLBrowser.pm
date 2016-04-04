@@ -33,6 +33,7 @@ use Slim::Utils::Misc;
 use Slim::Utils::Prefs;
 use Slim::Music::TitleFormatter;
 #use Slim::Utils::Timers;
+use Slim::Web::ImageProxy qw(proxiedImage);
 
 use constant CACHE_TIME => 3600; # how long to cache browse sessions
 
@@ -368,7 +369,7 @@ sub _cliQuery_done {
 		my $cachetime = defined $feed->{'cachetime'} ? $feed->{'cachetime'} : CACHE_TIME;
 		main::DEBUGLOG && $log->is_debug && $log->debug( "Caching session $sid for $cachetime" );
 		eval { $cache->set( "xmlbrowser_$sid", $feed, $cachetime ) };
-		if ( $@ && $log->is_debug ) {
+		if ( main::DEBUGLOG && $@ && $log->is_debug ) {
 			$log->debug("Session not cached: $@");
 		}
 	}
@@ -759,7 +760,7 @@ sub _cliQuery_done {
 
 					# if we're adding or inserting, show a showBriefly
 					if ( $method =~ /add/ || $method eq 'insert' ) {
-						my $icon = $subFeed->{'image'} || $subFeed->{'cover'} || $request->getParam('icon');
+						my $icon = proxiedImage($subFeed->{'image'} || $subFeed->{'cover'} || $request->getParam('icon'));
 						my $title = $subFeed->{'name'} || $subFeed->{'title'};
 						_addingToPlaylist($client, $method, $title, $icon);
 					}
@@ -976,7 +977,7 @@ sub _cliQuery_done {
 					for my $item ( @$items ) {
 						next unless $item->{image};
 						push @{$images}, {
-							image   => $item->{image},
+							image   => proxiedImage($item->{image}),
 							caption => $item->{name},
 							date    => $item->{date},
 							owner   => $item->{owner},
@@ -1098,6 +1099,12 @@ sub _cliQuery_done {
 							$hash{'style'} = 'itemplay';
 						}
 						
+						elsif (my $playcontrol = $item->{'playcontrol'}) {
+							if    ($playcontrol eq 'play')   {$hash{'style'} = 'item_play';}
+							elsif ($playcontrol eq 'add')    {$hash{'style'} = 'item_add';}
+							elsif ($playcontrol eq 'insert' && $client->revision !~ /^7\.[0-7]/) {$hash{'style'} = 'item_insert';}
+						}
+						
 						my $itemText = $nameOrTitle;
 						if ($item->{'name2'}) {
 							$itemText .= "\n" . $item->{'name2'};
@@ -1134,19 +1141,19 @@ sub _cliQuery_done {
 						my %merged = (%{$params}, %{$itemParams});
 
 						if ( $item->{icon} ) {
-							$hash{'icon' . ($item->{icon} =~ /^http:/ ? '' : '-id')} = $item->{icon};
-							$hasImage = 1;				
+							$hash{'icon' . ($item->{icon} =~ /^http:/ ? '' : '-id')} = proxiedImage($item->{icon});
+							$hasImage = 1;
 						} elsif ( $item->{image} ) {
-							$hash{'icon'} = $item->{image};
+							$hash{'icon'} = proxiedImage($item->{image});
 							$hasImage = 1;
 						}
 						if (my $coverid = $item->{'artwork_track_id'}) {
-							$hash{'icon-id'} = $coverid;
+							$hash{'icon-id'} = proxiedImage($coverid);
 							$hasImage = 1;
 						}
 
 						if ( $item->{type} && $item->{type} eq 'text' && !$item->{wrap} && !$item->{jive} ) {
-							$hash{'style'} = 'itemNoAction';
+							$hash{'style'} ||= 'itemNoAction';
 							$hash{'action'} = 'none';
 						}
 						
@@ -1319,16 +1326,18 @@ sub _cliQuery_done {
 							}
 							$hash{'actions'} = $actions;
 							
-							for my $key ('window', 'showBigArtwork', 'style', 'nextWindow', 'icon-id') {
+							for my $key ('window', 'showBigArtwork', 'style', 'nextWindow') {
 								if ( $item->{jive}->{$key} ) {
 									$hash{$key} = $item->{jive}->{$key};
 								}
 							}
+							
+							$hash{'icon-id'} = proxiedImage($item->{jive}->{'icon-id'}) if $item->{jive}->{'icon-id'};
 						}
 						
 						if (exists $hash{'actions'} && scalar keys %{$hash{'actions'}}) {
 							delete $hash{'action'};
-							delete $hash{'style'} if $hash{'style'} eq 'itemNoAction';
+							delete $hash{'style'} if $hash{'style'} && $hash{'style'} eq 'itemNoAction';
 						}
 						
 						$hash{'textkey'} = $item->{textkey} if defined $item->{textkey};
@@ -1344,7 +1353,7 @@ sub _cliQuery_done {
 						$hash{name}  = $name          if defined $name;
 						$hash{type}  = $item->{type}  if defined $item->{type};
 						$hash{title} = $item->{title} if defined $item->{title};
-						$hash{image} = $item->{image} if defined $item->{image};
+						$hash{image} = proxiedImage($item->{image}) if defined $item->{image};
 
 						# add url entries if requested unless they are coderefs as this breaks serialisation
 						if ($want_url && defined $item->{url} && (!ref $item->{url} || ref $item->{url} ne 'CODE')) {
@@ -1563,7 +1572,7 @@ sub _addingToPlaylist {
 			type => 'mixed',
 			text => [ $jivestring, $title ],
 			style => 'add',
-			'icon-id' => defined $icon ? $icon : '/html/images/cover.png',
+			'icon-id' => defined $icon ? proxiedImage($icon) : '/html/images/cover.png',
 		},
 	} );
 }
@@ -1775,6 +1784,8 @@ sub _playlistControlContextMenu {
 	my $item    = $args->{'item'};
 
 	my @contextMenu;
+
+	my $canIcons = $request && $request->client && ($request->client->revision !~ /^7\.[0-7]/);
 	
 	# We only add playlist-control items for an item which is playable
 	if (hasAudio($item)) {
@@ -1805,6 +1816,7 @@ sub _playlistControlContextMenu {
 		if ($action = _makePlayAction($subFeed, $item, 'add', 'parentNoRefresh', $query, $mode, $item_id)) {
 			push @contextMenu, {
 				text => $request->string('ADD_TO_END'),
+				style => 'item_add',
 				actions => {go => $action},
 			},
 		}
@@ -1812,6 +1824,7 @@ sub _playlistControlContextMenu {
 		if ($action = _makePlayAction($subFeed, $item, 'insert', 'parentNoRefresh', $query, $mode, $item_id)) {
 			push @contextMenu, {
 				text => $request->string('PLAY_NEXT'),
+				style => $canIcons ? 'item_insert' : 'itemNoAction',
 				actions => {go => $action},
 			},
 		}
@@ -1819,7 +1832,7 @@ sub _playlistControlContextMenu {
 		if ($action = _makePlayAction($subFeed, $item, 'play', 'nowPlaying', $query, $mode, $item_id)) {
 			push @contextMenu, {
 				text => $request->string($addPlayAll ? 'PLAY_THIS_SONG' : 'PLAY'),
-				style => 'itemplay',
+				style => 'item_play',
 				actions => {go => $action},
 			},
 		}
@@ -1827,7 +1840,7 @@ sub _playlistControlContextMenu {
 		if ($addPlayAll && ($action = _makePlayAction($subFeed, $item, 'playall', 'nowPlaying', $query, $mode, $request->getParam('item_id'), $sub_id))) {
 			push @contextMenu, {
 				text => $request->string('JIVE_PLAY_ALL_SONGS'),
-				style => 'itemplay',
+				style => $canIcons ? 'item_playall' : 'itemNoAction',
 				actions => {go => $action},
 			},
 		}
@@ -1869,6 +1882,7 @@ sub _playlistControlContextMenu {
 	
 		push @contextMenu, {
 			text => $request->string($token),
+			style => $canIcons ? 'item_fav' : 'itemNoAction',
 			actions => $favoriteActions,
 		};
 	}
@@ -1895,7 +1909,7 @@ sub _favoritesParams {
 		$presetParams{'parser'} = $item->{'parser'} if $item->{'parser'};
 		
 		if (my $icon = $item->{'image'} || $item->{'icon'} || $item->{'cover'}) {
-			$presetParams{'icon'} = $icon;
+			$presetParams{'icon'} = proxiedImage($icon);
 		}
 		
 		return \%presetParams;
@@ -1928,7 +1942,7 @@ sub _defeatDestructiveTouchToPlay {
 	
 	return 0 if !$pref;
 	return 1 if $pref == 1 || !$client;
-	return ($client->isPlaying() && $client->playingSong()->duration()) if $pref == 4;
+	return ($client->isPlaying() && $client->playingSong()->duration() && !$client->playingSong()->isPlaylist()) if $pref == 4;
 	my $l = Slim::Player::Playlist::count($client);
 	return 0 if $l < 2;
 	return 0 if $pref == 3 && (!$client->isPlaying() || $l < 2);

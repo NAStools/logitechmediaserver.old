@@ -199,6 +199,7 @@ sub canDirectStreamSong {
 }
 
 # Track Info menu
+=pod XXX - legacy track info menu from before Slim::Menu::TrackInfo times?
 sub trackInfo {
 	my ( $class, $client, $track ) = @_;
 	
@@ -221,6 +222,7 @@ sub trackInfo {
 	
 	$client->modeParam( 'handledTransition', 1 );
 }
+=cut
 
 # URL used for CLI trackinfo queries
 sub trackInfoURL {
@@ -363,42 +365,6 @@ sub getIcon {
 	my ( $class, $url ) = @_;
 
 	return Slim::Plugin::Classical::Plugin->_pluginDataFor('icon');
-}
-
-# SN only
-# Re-init when a player reconnects
-sub reinit {
-	my ( $class, $client, $song ) = @_;
-
-	my $url = $song->currentTrack->url();
-	
-	main::DEBUGLOG && $log->debug("Re-init Classical - $url");
-
-	if ( my $track = $song->pluginData() ) {
-		# We have previous data about the currently-playing song
-		
-		# Back to Now Playing
-		Slim::Buttons::Common::pushMode( $client, 'playlist' );
-		
-		# Reset song duration/progress bar
-		if ( $track->{Length} ) {
-			# On a timer because $client->currentsongqueue does not exist yet
-			Slim::Utils::Timers::setTimer(
-				$client,
-				Time::HiRes::time(),
-				sub {
-					my $client = shift;
-					
-					$client->streamingProgressBar( {
-						url      => $url,
-						duration => $track->{Length},
-					} );
-				},
-			);
-		}
-	}
-	
-	return 1;
 }
 
 1;

@@ -3,7 +3,6 @@
 <!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Transitional//EN" "http://www.w3.org/TR/xhtml1/DTD/xhtml1-transitional.dtd">
 <html>
 	<head>
-		<meta http-equiv="X-UA-Compatible" content="IE=7" />
 		<link rel="stylesheet" type="text/css" href="/html/ext/resources/css/ext-all-notheme.css" />
 		<link rel="stylesheet" type="text/css" href="[% webroot %]slimserver.css?r=[% revision %]" />
 		<link rel="stylesheet" type="text/css" href="[% webroot %]skin.css?r=[% revision %]" />
@@ -48,13 +47,6 @@
 				Main.initPlayerControl();
 			});
 		</script>
-
-		<!--[if IE 6]>
-		<link href="[% webroot %]ie.css?r=[% revision %]" type="text/css" rel="stylesheet">
-		<![endif]-->
-		<!--[if IE 7]>
-		<link href="[% webroot %]ie7.css?r=[% revision %]" type="text/css" rel="stylesheet">
-		<![endif]-->
 
 		[% IF debug %]
 		<style>
@@ -146,15 +138,15 @@
 			<div id="ctrlCurrentSongInfo">
 				<div id="ctrlCurrentTitle"></div>
 				<div id="ctrlTrackInfo" class="currentTrackInfo">
-					<div id="ctrlCurrentAlbum"></div>
 					<div id="ctrlCurrentArtist"></div>
+					<div id="ctrlCurrentAlbum"></div>
 					<div id="ctrlBitrate"></div>
 				</div>
 				<div id="ctrlPlaytimePanel">
 					<div id="ctrlPlaytime"></div>
 					<div>
 						<div id="ctrlProgress">
-							<img src="html/images/spacer.gif" class="progressLeft"/><img src="html/images/spacer.gif" class="progressFillLeft"/><img src="html/images/spacer.gif" class="progressIndicator"/><img src="html/images/spacer.gif" class="progressFillRight"/><img src="html/images/spacer.gif" class="progressRight"/>
+							<img src="[% webroot %]html/images/spacer.gif" class="progressLeft"/><img src="[% webroot %]html/images/spacer.gif" class="progressFillLeft"/><img src="[% webroot %]html/images/spacer.gif" class="progressIndicator"/><img src="[% webroot %]html/images/spacer.gif" class="progressFillRight"/><img src="[% webroot %]html/images/spacer.gif" class="progressRight"/>
 						</div>
 					</div>
 					<div id="ctrlPlaytimeRight">

@@ -21,10 +21,13 @@ use Slim::Utils::OSDetect;
 use Slim::Utils::Prefs;
 use Slim::Utils::Strings;
 use Slim::Utils::Unicode;
+use Slim::Web::ImageProxy;
 
 BEGIN {
 	# Use our custom Template::Context subclass
 	$Template::Config::CONTEXT = 'Slim::Web::Template::Context';
+	# Use Profiler instead if you want to investigate page rendering performance
+#	$Template::Config::CONTEXT = 'Slim::Web::Template::Profiler';
 	$Template::Provider::MAX_DIRS = 128;
 }
 
@@ -221,7 +224,7 @@ sub addSkinTemplate {
 			'utf8encode'        => \&Slim::Utils::Unicode::utf8encode,
 			'utf8on'            => \&Slim::Utils::Unicode::utf8on,
 			'utf8off'           => \&Slim::Utils::Unicode::utf8off,
-			'resizeimage'       => [ \&_resizeImage, 1 ],  
+			'resizeimage'       => [ \&_resizeImage, 1 ], 
 			'imageproxy'        => [ sub {
 				return _resizeImage($_[0], $_[1], $_[2], '-');
 			}, 1 ],
@@ -229,6 +232,13 @@ sub addSkinTemplate {
 
 		EVAL_PERL => 1,
 		ABSOLUTE  => 1,
+		
+		# we usually don't change templates while running
+		STAT_TTL  => main::NOBROWSECACHE ? 1 : 3600,
+		
+		VARIABLES => {
+			hasMediaSupport => main::IMAGE && main::MEDIASUPPORT,
+		},
 	});
 
 	return $class->{skinTemplates}->{$skin};
@@ -249,31 +259,30 @@ sub _resizeImage {
 	
 	$height ||= '';
 	$mode   ||= '';
-	$prefix ||= '';
+	$prefix ||= '/';
 	
 	return sub {
 		my $url = shift;
 
+		# use local imageproxy to resize image (if enabled)
+		$url = Slim::Web::ImageProxy::proxiedImage($url);
+		
+		my ($host) = Slim::Utils::Misc::crackURL($url);
+
 		# don't use imageproxy on local network
-		if ( $url =~ m{^http://(?:192\.168\.|172\.1[6-9]\.|172\.2\d\.|172\.3[01]\.|10\.|127\.0|localhost)}i && !$ENV{SN_DEV} ) {
-			# XXX - we might consider a local imageproxy handling local URLs and files
+		if ( $host && Slim::Utils::Network::ip_is_private($host) || $host =~ /localhost/i ) {
 			return $url;
 		}
 		
-		# external resource
-		elsif ( $url =~ m{^http://} ) {
+		# fall back to using external image proxy for external resources
+		elsif ( !main::NOMYSB && $url =~ m{^https?://} ) {
 			return Slim::Networking::SqueezeNetwork->url(
 				"/public/imageproxy?w=$width&h=$height&u=" . uri_escape($url)
 			);
 		}
-		elsif ( $url =~ m{^http} ) {
-			return Slim::Networking::SqueezeNetwork->url(
-				"/public/imageproxy?w=$width&h=$height&u=$url"
-			);
-		}
 		
 		# $url comes with resizing parameters
-		elsif ( $url =~ /_((?:[0-9X]+x[0-9X]+)(?:_\w)?(?:_[\da-fA-F]+)?(?:\.\w+)?)$/ ) {
+		if ( $url =~ /_((?:[0-9X]+x[0-9X]+)(?:_\w)?(?:_[\da-fA-F]+)?(?:\.\w+)?)$/ ) {
 			return $url;
 		}
 		
@@ -285,7 +294,8 @@ sub _resizeImage {
 		$resizeParams .= "x$height" if $height;
 
 		# music artwork
-		if ( $url =~ m{^(/music/.*/cover)(?:\.jpg)?$} ) {
+		my $webroot = $context->{STASH}->{webroot};
+		if ( $url =~ m{^((?:$webroot|/)music/.*/cover)(?:\.jpg)?$} || $url =~ m{(.*imageproxy/.*/image)(?:\.(jpe?g|png|gif))} ) {
 			return $1 . $resizeParams . '_o';
 		}
 		
@@ -302,12 +312,14 @@ sub _resizeImage {
 		$resizeParams .= "_$mode" if $mode;
 	
 		$url =~ s/(\.png|\.gif|\.jpe?g|)$/$resizeParams$1/i;
+		$url = '/' . $url unless $url =~ m{^(?:/|http)};
 		
 		return $url; 
 	};
 }
 
 
+my %empty;
 sub _fillTemplate {
 	my ($class, $params, $path, $skin) = @_;
 	
@@ -319,11 +331,16 @@ sub _fillTemplate {
 	$params->{'LOCALE'} = 'utf-8';
 
 	$path = $class->fixHttpPath($skin, $path);
+	
+	return \'' if $empty{$path}; 
 
 	if (!$template->process($path, $params, \$output)) {
 
 		logError($template->error);
 	}
+
+	# don't re-read potentially empty files over and over again
+	$empty{$path} = 1 if !$output && $path =~ /include\.html/;
 
 	return \$output;
 }
@@ -347,26 +364,27 @@ Attempts to figure out what the browser is by user-agent string identification
 =cut
 
 sub detectBrowser {
-	my $class = shift;
-
-	my $request = shift;
+	my ($class, $request) = @_;
+	
 	my $return = 'unknown';
 	
-	return $return unless $request->header('user-agent');
-
-	if ($request->header('user-agent') =~ /Firefox/) {
+	my $ua = $request->header('user-agent') || return $return;
+	
+	if ($ua =~ /Firefox/) {
 		$return = 'Firefox';
-	} elsif ($request->header('user-agent') =~ /Opera/) {
+	} elsif ($ua =~ /Opera/) {
 		$return = 'Opera';
-	} elsif ($request->header('user-agent') =~ /Safari/) {
+	} elsif ($ua =~ /Chrome/) {
+		$return = 'Chrome';
+	} elsif ($ua =~ /Safari/) {
 		$return = 'Safari';
-	} elsif ($request->header('user-agent') =~ /MSIE 7/) {
+	} elsif ($ua =~ /MSIE 7/) {
 		$return = 'IE7';
 	} elsif (
-		$request->header('user-agent') =~ /MSIE/   && # does it think it's IE
-        $request->header('user-agent') !~ /Opera/  && # make sure it's not Opera
-        $request->header('user-agent') !~ /Linux/  && # make sure it's not Linux
-        $request->header('user-agent') !~ /arm/)      # make sure it's not a Nokia tablet
+		$ua =~ /MSIE/   && # does it think it's IE
+        $ua !~ /Opera/  && # make sure it's not Opera
+        $ua !~ /Linux/  && # make sure it's not Linux
+        $ua !~ /arm/)      # make sure it's not a Nokia tablet
 	{
 		$return = 'IE';
 	}

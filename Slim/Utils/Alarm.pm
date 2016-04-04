@@ -117,6 +117,7 @@ sub new {
 		_days => (! defined $time || $time < 86400) ? [(1) x 7] : undef,
 		_enabled => 0,
 		_repeat => 1,
+		_shufflemode => 0,
 		_playlist => undef,
 		_title => undef,
 		_volume => undef, # Use default volume
@@ -252,6 +253,24 @@ sub repeat {
 	$self->{_repeat} = $newValue if defined $newValue;
 	
 	return $self->{_repeat};
+}
+=head3 shufflemode ( [0/1/2] )
+
+Sets/returns the shuffle mode that will be used for the playlist for this alarm.
+
+  0 = no shuffling
+  1 = shuffle-by-song
+  2 = shuffle-by-album
+
+=cut
+
+sub shufflemode {
+	my $self = shift;
+	my $newValue = shift;
+
+	$self->{_shufflemode} = $newValue if defined $newValue;
+
+	return $self->{_shufflemode};
 }
 
 =head3 time( [ $time ] )
@@ -424,17 +443,6 @@ sub findNextTime {
 	if (defined $self->{_days}) {
 		# Convert base time into a weekday number and time
 		my ($sec, $min, $hour, $mday, $mon, $year, $wday)  = localtime($baseTime);
-		
-		if ( main::SLIM_SERVICE ) {
-			# Adjust for the user's timezone
-			my $dt = $client->datetime;
-			
-			$wday = $dt->day_of_week % 7;
-			$min  = $dt->min;
-			$hour = $dt->hour;
-			
-			main::DEBUGLOG && $isDebug && $log->debug( "SN time adjusted to wday $wday $hour:$min:$sec" );
-		}
 
 		# Find the first enabled alarm starting at baseTime's day num 
 		my $day = $wday;
@@ -546,32 +554,16 @@ sub sound {
 		# don't sound the alarm via the code below
 		$soundAlarm = 0;
 	}
-	
-	if ( main::SLIM_SERVICE ) {
-		# Some players on SN have alarms that simply execute a playlist play command, they don't
-		# need the alarm screensaver, fallback alarm, etc.
-		if ( $client->hasSpecialAlarm ) {
-			# Log it
-			$client->logStreamEvent( 'Alarm: ' . $self->title );
-			
-			# Run it
-			if ( $soundAlarm ) {
-				main::DEBUGLOG && $isDebug && $log->debug( 'Playing special alarm ' . $self->title . ' (' . $self->playlist . ')' );
-				
-				$client->execute( [ 'playlist', 'play', $self->playlist, $self->title ] );
-			
-				# Make sure this alarm is not scheduled again right away
-				$client->alarmData->{lastAlarmTime} = $self->{_nextDue};
-			
-				# don't sound the alarm via the code below
-				$soundAlarm = 0;
-			}
-		}
-	}
 
 	if ($soundAlarm) {
 		# Sound an Alarm (HWV 63)
 		main::DEBUGLOG && $isDebug && $log->debug('Sounding alarm');
+
+		# we need to disable randomplay or we can't change shuffle mode
+		if (defined $self->{_playlist})
+		{
+			$client->execute(['randomplay', 'disable']);
+		}
 
 		# Stop any other current alarm
 		if ($client->alarmData->{currentAlarm}) {
@@ -622,6 +614,15 @@ sub sound {
 			$client->execute(['mixer', 'volume', $self->volume]);
 		}
 
+		# Set the player shuffle mode prior to loading
+		# playlist
+		my $currentShuffleMode = $prefs->client($client)->get('shuffle');
+		$self->{_originalShuffleMode} = $currentShuffleMode;
+		if (defined $self->shufflemode) {
+			main::DEBUGLOG && $isDebug && $log->debug('Alarm playlist shufflemode: ' . $self->shufflemode);
+			$client->execute(['playlist', 'shuffle', $self->shufflemode]);
+		}
+
 		# Play alarm playlist, falling back to the current playlist if undef
 		if (defined $self->playlist) {
 			main::DEBUGLOG && $isDebug && $log->debug('Alarm playlist url: ' . $self->playlist);
@@ -647,7 +648,7 @@ sub sound {
 			# if this is a squeezeplay-based player on or after r8312, fallback alarm comes from client-side only
 		}
 		else {
-			Slim::Utils::Timers::setTimer($self, Time::HiRes::time() + 20, \&_checkPlaying);
+			Slim::Utils::Timers::setTimer($self, Time::HiRes::time() + 90, \&_checkPlaying);
 		}
 
 		# Allow a slight delay for things to load up then tell the user what's going on
@@ -895,6 +896,11 @@ sub stop {
 			main::DEBUGLOG && $isDebug && $log->debug('Restoring pre-alarm volume level: ' . $self->{_originalVolume});
 			$client->volume($self->{_originalVolume});
 		}
+
+		# Restore client shuffle mode
+		main::DEBUGLOG && $isDebug && $log->debug('Restoring pre-alarm shuffle mode: ' . $self->{_originalShuffleMode});
+		$client->execute(['playlist', 'shuffle', $self->{_originalShuffleMode}]);
+
 		# Bug: 12760, 9569 - Return power state to that prior to the alarm
 		main::DEBUGLOG && $isDebug && $log->debug('Restoring pre-alarm power state: ' . ($self->{_originalPower} ? 'on' : 'off'));
 		$client->power($self->{_originalPower});
@@ -1069,6 +1075,7 @@ sub _createSaveable {
 		_days => $self->{_days},
 		_enabled => $self->{_enabled},
 		_repeat => $self->{_repeat},
+		_shufflemode => $self->{_shufflemode},
 		_playlist => $self->{_playlist},
 		_title => $self->{_title},
 		_volume => $self->{_volume},
@@ -1122,7 +1129,7 @@ sub _checkPlaying {
 	
 	main::DEBUGLOG && $isDebug && $log->debug( 'Current playmode: ' . Slim::Player::Source::playmode($client) );
 
-	if (!$client->isPlaying) {
+	if (!$client->isPlaying('really')) {
 		main::DEBUGLOG && $isDebug && $log->debug('Alarm active but client not playing');
 		$self->_playFallback();
 	}
@@ -1135,23 +1142,18 @@ sub _playFallback {
 	my $client = $self->client;
 	
 	my $url;
+
+	my $server = Slim::Utils::Network::serverAddr();
+	my $port   = $prefs->get('httpport');
 	
-	if ( main::SLIM_SERVICE ) {
-		$url = "loop://www.squeezenetwork.com/static/sounds/alarm/slim-backup-alarm.mp3";
+	my $auth = '';
+	if ( $prefs->get('authorize') ) {
+		my $password = Slim::Player::Squeezebox::generate_random_string(10);
+		$client->password($password);
+		$auth = "squeezeboxXXX:${password}@";
 	}
-	else {	
-		my $server = Slim::Utils::Network::serverAddr();
-		my $port   = $prefs->get('httpport');
-		
-		my $auth = '';
-		if ( $prefs->get('authorize') ) {
-			my $password = Slim::Player::Squeezebox::generate_random_string(10);
-			$client->password($password);
-			$auth = "squeezeboxXXX:${password}@";
-		}
-	
-		$url = "loop://${auth}${server}:${port}/html/slim-backup-alarm.mp3";
-	}
+
+	$url = "loop://${auth}${server}:${port}/html/slim-backup-alarm.mp3";
 
 	main::DEBUGLOG && $log->is_debug && $log->debug("Starting fallback alarm: $url");
 
@@ -1344,13 +1346,6 @@ sub loadAlarms {
 
 	$client->alarmData->{alarms} = {};
 
-	if ( main::SLIM_SERVICE ) {
-		# Ignore alarms on disabled players
-		if ( $client->playerData->disabled ) {
-			$prefAlarms = {};
-		}
-	}
-
 	foreach my $prefAlarm (keys %$prefAlarms) {
 		$prefAlarm = $prefAlarms->{$prefAlarm};
 		next unless ref $prefAlarm eq 'HASH';
@@ -1359,6 +1354,7 @@ sub loadAlarms {
 		$alarm->{_days} = $prefAlarm->{_days};
 		$alarm->{_enabled} = $prefAlarm->{_enabled};
 		$alarm->{_repeat} = $prefAlarm->{_repeat};
+		$alarm->{_shufflemode} = $prefAlarm->{_shufflemode};
 		$alarm->{_playlist} = $prefAlarm->{_playlist};
 		$alarm->{_title} = $prefAlarm->{_title};
 		$alarm->{_volume} = $prefAlarm->{_volume};
@@ -1653,15 +1649,14 @@ added and should contain a title key, whose value is the display name for a play
 key, whose value is the url for the playlist.  The title values will be passed through
 $client->string if they are enclosed in curly braces.
 
-For example, the RandomPlay plugin could register its mixes as possible alarm playlists as follows
-(in fact, RandomPlay is special and is registered differently, but you get the idea...):
+For example, the RandomPlay plugin does register its mixes as possible alarm playlists as follows
 
 	Slim::Utils::Alarm->addPlaylists('PLUGIN_RANDOMPLAY',
 		[
-			{ title => '{PLUGIN_RANDOM_TRACK}', url => 'randomplay:track' },
-			{ title => '{PLUGIN_RANDOM_CONTRIBUTOR}', url => 'randomplay:contributor' },
-			{ title => '{PLUGIN_RANDOM_ALBUM}', url => 'randomplay:album' },
-			{ title => '{PLUGIN_RANDOM_YEAR}', url => 'randomplay:year' },
+			{ title => '{PLUGIN_RANDOM_TRACK}', url => 'randomplay://track' },
+			{ title => '{PLUGIN_RANDOM_CONTRIBUTOR}', url => 'randomplay://contributor' },
+			{ title => '{PLUGIN_RANDOM_ALBUM}', url => 'randomplay://album' },
+			{ title => '{PLUGIN_RANDOM_YEAR}', url => 'randomplay://year' },
 		]
 	);
 
@@ -1744,35 +1739,22 @@ sub getPlaylists {
 			};
 	}
 
-	if (!main::SLIM_SERVICE) {
-		# Add the current saved playlists
-		# XXX: This code would ideally also be elsewhere
-		my @saved = Slim::Schema->rs('Playlist')->getPlaylists;
-		my @savedArray;
-		foreach my $playlist (@saved) {
-			push @savedArray, {
-					title => $playlist->title,
-					url => $playlist->url
-				};
-		}
-		@savedArray = sort { $a->{title} cmp $b->{title} } @savedArray; 
-		push @playlists, {
-				type => 'PLAYLISTS',
-				items => \@savedArray,
+	# Add the current saved playlists
+	# XXX: This code would ideally also be elsewhere
+	my @saved = Slim::Schema->rs('Playlist')->getPlaylists;
+	my @savedArray;
+	foreach my $playlist (@saved) {
+		push @savedArray, {
+				title => $playlist->title,
+				url => $playlist->url
 			};
-
-		# Add random mixes
-		if ( Slim::Utils::PluginManager->isEnabled('Slim::Plugin::RandomPlay::Plugin') ) {
-			if ( my $mixes = Slim::Plugin::RandomPlay::Plugin->getAlarmPlaylists() ) {
-				foreach my $mixType (@$mixes) {
-					push @playlists, {
-							type => $mixType->{type},
-							items => $mixType->{items},
-						};
-				}
-			}
-		}
 	}
+
+	@savedArray = sort { $a->{title} cmp $b->{title} } @savedArray; 
+	push @playlists, {
+		type => 'PLAYLISTS',
+		items => \@savedArray,
+	};
 
 	# Add natural sounds
 	if ( Slim::Utils::PluginManager->isEnabled('Slim::Plugin::Sounds::Plugin') ) {
@@ -1900,8 +1882,6 @@ sub popAlarmScreensaver {
 # to $alarmsScheduled.
 sub _startStopTimeCheck {
 	my $class = shift;
-
-	return if main::SLIM_SERVICE; # SN does things differently
 	
 	my $isDebug = main::DEBUGLOG && $log->is_debug;
 

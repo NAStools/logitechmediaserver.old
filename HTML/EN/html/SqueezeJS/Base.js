@@ -8,7 +8,6 @@ var SqueezeJS = {
 	string : function(s){ return this.Strings[s]; },
 	
 	contributorRoles : new Array('artist', 'composer', 'conductor', 'band', 'albumartist', 'trackartist'),
-	coverFileSuffix : Ext.isIE6 ? 'gif' : 'png',
 
 	Controller : null
 };
@@ -633,7 +632,7 @@ SqueezeJS.SonginfoParser = {
 				title = result.playlist_loop[0].title;
 
 			else
-				title = (result.playlist_loop[0].disc ? result.playlist_loop[0].disc + '-' : '')
+				title = (result.playlist_loop[0].disc && result.playlist_loop[0].disccount > 1 ? result.playlist_loop[0].disc + '-' : '')
 						+ (result.playlist_loop[0].tracknum ? result.playlist_loop[0].tracknum + ". " : '')
 						+ result.playlist_loop[0].title;
 
@@ -726,7 +725,7 @@ SqueezeJS.SonginfoParser = {
 	bitrate : function(result){
 		var bitrate = '';
 
-		if (result.playlist_tracks > 0 && result.playlist_loop[0].bitrate && result.remote) {
+		if (result.playlist_tracks > 0 && result.playlist_loop[0].bitrate) {
 			bitrate = result.playlist_loop[0].bitrate
 				+ (result.playlist_loop[0].type
 					? ', ' + result.playlist_loop[0].type
@@ -750,7 +749,10 @@ SqueezeJS.SonginfoParser = {
 				link = result.playlist_loop[0].info_link || 'songinfo.html';
 			}
 		}
-
+		
+		if (coverart.search(/^http/) == -1 && coverart.search(/^\//) == -1)
+			coverart = webroot + coverart;
+		
 		return this.tpl[((noLink || id == null || id < 0) ? 'raw' : 'linked')].coverart.apply({
 			id: id,
 			src: coverart,
@@ -763,7 +765,6 @@ SqueezeJS.SonginfoParser = {
 	coverartUrl : function(result, width){
 		var coverart = this.defaultCoverart(0, width);
 		var link;
-
 		if (result.playlist_tracks > 0) {
 			if (result.playlist_loop[0].artwork_url) {
 				coverart = result.playlist_loop[0].artwork_url;
@@ -791,19 +792,22 @@ SqueezeJS.SonginfoParser = {
 
 				// some internal logos come without resizing parameters - add them here if size is defined
 				else if (coverart && width && !publicURL) {
-					coverart = coverart.replace(/(icon)(\.\w+)$/, "$1_" + width + 'x' + width + "_p$2");
+					coverart = coverart.replace(/(icon|image|cover)(\.\w+)$/, "$1_" + width + 'x' + width + "_p$2");
 				}
 			}
 			else {
 				coverart = this.defaultCoverart(result.playlist_loop[0].coverid || result.playlist_loop[0].artwork_track_id || result.playlist_loop[0].id, width);
 			}
 		}
+		
+		if (coverart.match(/^imageproxy/))
+			coverart = '/' + coverart;
 
 		return coverart;
 	},
 	
 	defaultCoverart : function(coverid, width) {
-		return SqueezeJS.Controller.getBaseUrl() + '/music/' + (coverid || 0) + '/cover' + (width ? '_' + width + 'x' + width + '_p.' : '.') + SqueezeJS.coverFileSuffix;
+		return SqueezeJS.Controller.getBaseUrl() + '/music/' + (coverid || 0) + '/cover' + (width ? '_' + width + 'x' + width + '_p.png' : '');
 	}
 };
 

@@ -70,6 +70,8 @@ sub init {
 			$downloader = 'Slim::Utils::PluginDownloader';
 			$downloader->init;
 		};
+		
+		$@ && $log->error("Failed to load plugin downloader: $@");
 	}
 
 	my $pendingOps;
@@ -205,13 +207,13 @@ sub load {
 		# if they are loaded
 		$disabled->{$module} = $plugins->{$name};
 
-		if ( main::SLIM_SERVICE && $name =~ /^Plugins/ ) {
-			# Skip 3rd party plugins on SN
-			next;
-		}
-
 		# in failsafe mode skip all plugins which aren't required
 		next if ($main::failsafe && !$plugins->{$name}->{'enforce'});
+		
+		if ( main::NOMYSB && $plugins->{$name}->{needsMySB} ) {
+			main::INFOLOG && $log->info("Skipping plugin: $name - requires mysqueezebox.com, but support for mysqueezebox.com is disabled.");
+			next;
+		}
 
 		if (defined $state && $state !~ /enabled|disabled/) {
 			$log->error("Skipping plugin: $name - in erroneous state: $state");
@@ -329,11 +331,6 @@ sub load {
 				delete $disabled->{$module};
 			}
 		}
-		
-		if ( main::SLIM_SERVICE ) {
-			# no web stuff for SN
-			next;
-		}
 
 		# Add any Bin dirs to findbin search path
 		my $binDir = catdir($baseDir, 'Bin');
@@ -342,11 +339,25 @@ sub load {
 
 			main::DEBUGLOG && $log->debug("Adding Bin directory: [$binDir]");
 
-			Slim::Utils::Misc::addFindBinPaths( catdir($binDir, Slim::Utils::OSDetect::details()->{'binArch'}), $binDir );
+			my $binArch = Slim::Utils::OSDetect::details()->{'binArch'};
+			my @paths = ( catdir($binDir, $binArch), $binDir );
+
+			if ( $binArch =~ /i386-linux/i ) {
+	 			my $arch = $Config::Config{'archname'};
+	 			
+				if ( $arch && $arch =~ s/^x86_64-([^-]+).*/x86_64-$1/ ) {
+					unshift @paths, catdir($binDir, $arch);
+				}
+			}
+			elsif ( $binArch && $binArch eq 'armhf-linux' ) {
+				push @paths, catdir($binDir, 'arm-linux');
+			}
+
+			Slim::Utils::Misc::addFindBinPaths( @paths );
 		}
 
 		# add skin folders even in noweb mode: we'll need them for the icons
-		if ( !main::SLIM_SERVICE && !main::SCANNER ) {
+		if ( !main::SCANNER ) {
 			# Add any available HTML to TT's INCLUDE_PATH
 			my $htmlDir = catdir($baseDir, 'HTML');
 
@@ -408,14 +419,27 @@ sub dirsFor {
 	my $type  = shift;
 	
 	my @dirs = ();
+	my $disabledTokens = {};
 
 	for my $name (keys %$plugins) {
 
-		# FIXME: for the moment include strings for disabled plugins so the settings page works
-		if ($type eq 'strings' || $prefs->get($name) eq 'enabled') {
+		# include name & description strings for disabled plugins so the settings page works
+		my $enabled = $prefs->get($name) eq 'enabled';
+		if ($type eq 'strings' || $enabled) {
 			push @dirs, $plugins->{$name}->{'basedir'};
+			
+			# we don't want to read all tokens for disabled plugins - only those used in the name & description
+			if (!$enabled) {
+				my $tokens = {};
+				foreach my $item ('name', 'description') {
+					$tokens->{$plugins->{$name}->{$item}}++ if $plugins->{$name}->{$item};
+				}
+				$disabledTokens->{$dirs[-1]} = $tokens if scalar keys %$tokens;
+			}
 		}
 	}
+	
+	push @dirs, $disabledTokens if scalar keys %$disabledTokens;
 	
 	return @dirs;
 }
@@ -534,7 +558,16 @@ sub message {
 
 	$message = shift if @_;
 
-	return ($class->needsRestart && Slim::Utils::Strings::string('PLUGINS_RESTART_MSG')) || $message;
+	return $class->needsRestart 
+		? Slim::Utils::Strings::string('PLUGINS_RESTART_MSG') . ' (' .
+			join(', ',
+				map {
+					Slim::Utils::Strings::string($plugins->{$_}->{name});
+				} grep {
+					$prefs->get($_) =~ /needs/
+				} keys %{$prefs->all}
+			) .
+		')' : $message;
 }
 
 sub _pluginCacheFile {
@@ -545,11 +578,6 @@ sub _pluginCacheFile {
 
 sub _writePluginCache {
 	my $class = shift;
-	
-	if ( main::SLIM_SERVICE ) {
-		# Don't bother with cache, assume all plugins are OK
-		return;
-	}
 
 	main::INFOLOG && $log->info("Writing out plugin cache file.");
 
@@ -563,11 +591,6 @@ sub _writePluginCache {
 
 sub _loadPluginCache {
 	my $class = shift;
-	
-	if ( main::SLIM_SERVICE ) {
-		# Don't bother with cache, assume all plugins are OK
-		return;
-	}
 
 	my $file = $class->_pluginCacheFile;
 

@@ -34,7 +34,7 @@ use File::Basename;
 use File::Slurp qw(read_file);
 use File::Spec::Functions qw(:ALL);
 
-use Slim::Networking::SqueezeNetwork;
+use Slim::Networking::Repositories;
 use Slim::Networking::SimpleAsyncHTTP;
 use Slim::Utils::Log;
 use Slim::Utils::Misc;
@@ -52,9 +52,7 @@ my $updatesDir;
 
 # Download location
 sub BASE {
-	'http://'
-	. Slim::Networking::SqueezeNetwork->get_server("update")
-	. '/update/firmware';
+	return Slim::Networking::Repositories->getUrlForRepository('firmware');
 }
 
 # Check interval when firmware can't be downloaded
@@ -75,7 +73,6 @@ download().
 =cut
 
 sub init {
-	
 	# Must initialize these here, not in declaration so that options have been parsed.
 	$dir        = Slim::Utils::OSDetect::dirsFor('Firmware');
 	$updatesDir = Slim::Utils::OSDetect::dirsFor('updates');
@@ -127,7 +124,11 @@ sub init_firmware_download {
 	}
 
 	# Don't check for Jive firmware if the 'check for updated versions' pref is disabled
-	return unless $prefs->get('checkVersion');
+	if ( !$prefs->get('checkVersion') ) {
+		main::INFOLOG && $log->info("Not downloading firmware for $model - update check has been disabled in Settings/Advanced/Software Updates");
+		get_fw_locally($model);
+		return;
+	}
 
 	main::INFOLOG && $log->is_info && $log->info("Downloading $model.version file...");
 
@@ -247,33 +248,44 @@ Called if firmware download failed.  Checks if another firmware exists in cache.
 
 sub init_fw_error {	
 	my $model = shift || 'jive';
-	
-	# Check if we have a usable Jive firmware
-	my $version_file = catdir( $updatesDir, "$model.version" );
-	
-	if ( -e $version_file ) {
-		my $version = read_file($version_file);
 
-		my ($ver, $rev) = $version =~ m/^([^ ]+)\sr(\d+)/;
+	main::INFOLOG && $log->info("$model firmware download had an error");
 
-		my $fw_file = catdir( $updatesDir, "${model}_${ver}_r${rev}.bin" );
-
-		if ( -e $fw_file ) {
-			main::INFOLOG && $log->info("$model firmware download had an error, using existing firmware: $fw_file");
-			$firmwares->{$model} = {
-				version  => $ver,
-				revision => $rev,
-				file     => $fw_file,
-			};
-			
-			Slim::Web::Pages->addRawDownload("^firmware/${model}.*\.bin", $fw_file, 'binary');
-
-			# send a notification that this firmware is downloaded
-			Slim::Control::Request->new(undef, ['fwdownloaded', $model])->notify('firmwareupgrade');
-		}
-	}
+	get_fw_locally( $model );
 	
 	# Note: Server will keep trying to download a new one
+}
+
+sub get_fw_locally {
+	my $model = shift || 'jive';
+	
+	for my $path ($updatesDir, $dir) {
+		# Check if we have a usable Jive firmware
+		my $version_file = catdir( $path, "$model.version" );
+		
+		if ( -e $version_file ) {
+			my $version = read_file($version_file);
+			my ($ver, $rev) = $version =~ m/^([^ ]+)\sr(\d+)/;
+	
+			my $fw_file = catdir( $path, "${model}_${ver}_r${rev}.bin" );
+
+			if ( -e $fw_file ) {
+				main::INFOLOG && $log->info("Using existing firmware for $model: $fw_file");
+				$firmwares->{$model} = {
+					version  => $ver,
+					revision => $rev,
+					file     => $fw_file,
+				};
+				
+				Slim::Web::Pages->addRawDownload("^firmware/${model}.*\.bin", $fw_file, 'binary');
+	
+				# send a notification that this firmware is downloaded
+				Slim::Control::Request->new(undef, ['fwdownloaded', $model])->notify('firmwareupgrade');
+				
+				last;
+			}
+		}
+	}
 }
 
 =head2 url()
@@ -296,7 +308,7 @@ sub url {
 
 	# when running on SqueezeOS, return the direct link from SqueezeNetwork
 	if ( Slim::Utils::OSDetect->getOS()->directFirmwareDownload() ) {
-		return BASE() . '/' . $::VERSION . '/' . $model
+		return BASE() . $::VERSION . '/' . $model
 			. '_' . $firmwares->{$model}->{version} 
 			. '_r' . $firmwares->{$model}->{revision} 
 			. '.bin';
@@ -304,10 +316,7 @@ sub url {
 
 	return unless $firmwares->{$model}->{file};
 	
-	return 'http://'
-		. Slim::Utils::Network::serverAddr() . ':'
-		. preferences('server')->get('httpport')
-		. '/firmware/' . basename($firmwares->{$model}->{file});
+	return Slim::Utils::Network::serverURL() . '/firmware/' . basename($firmwares->{$model}->{file});
 }
 
 =head2 need_upgrade( $current_version, $model )
@@ -444,7 +453,7 @@ sub downloadAsync {
 	$filesDownloading{$file} ||= [];
 	
 	# URL to download
-	my $url = BASE() . '/' . $::VERSION . '/' . basename($file);
+	my $url = BASE() . $::VERSION . '/' . basename($file);
 	
 	# Save to a tmp file so we can check SHA
 	my $http = Slim::Networking::SimpleAsyncHTTP->new(

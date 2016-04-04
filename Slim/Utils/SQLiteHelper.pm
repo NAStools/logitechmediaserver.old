@@ -12,8 +12,6 @@ Slim::Utils::SQLiteHelper->init
 
 =head1 DESCRIPTION
 
-Currently only used for SN
-
 =head1 METHODS
 
 =cut
@@ -42,6 +40,8 @@ my $log = logger('database.info');
 
 my $prefs = preferences('server');
 
+$prefs->setChange( \&setCacheSize, 'dbhighmem' ) unless main::SCANNER;
+
 sub storageClass { 'DBIx::Class::Storage::DBI::SQLite' };
 
 sub default_dbsource { 'dbi:SQLite:dbname=%s' }
@@ -61,20 +61,6 @@ sub init {
 		die "DBD::SQLite version 1.34 or higher required\n";
 	}
 	
-	if ( main::SLIM_SERVICE ) {
-		# Create new empty database every time we startup on SN
-		require File::Slurp;
-		require FindBin;
-		
-		my $text = File::Slurp::read_file( "$FindBin::Bin/SQL/slimservice/slimservice-sqlite.sql" );
-		
-		$text =~ s/\s*--.*$//g;
-		for my $sql ( split (/;/, $text) ) {
-			next unless $sql =~ /\w/;
-			$dbh->do($sql);
-		}
-	}
-	
 	# Reset dbsource pref if it's not for SQLite
 	#                                              ... or if it's using the long filename Windows doesn't like
 	if ( $prefs->get('dbsource') !~ /^dbi:SQLite/ || $prefs->get('dbsource') !~ /library\.db/ ) {
@@ -82,7 +68,7 @@ sub init {
 		$prefs->set( dbsource => $class->source() );
 	}
 	
-	if ( !main::SLIM_SERVICE && !main::SCANNER ) {
+	if ( !main::SCANNER ) {
 		# Event handler for notifications from scanner process
 		Slim::Control::Request::addDispatch(
 			['scanner', 'notify', '_msg'],
@@ -93,23 +79,13 @@ sub init {
 
 sub source {
 	my $source;
-	
-	if ( main::SLIM_SERVICE ) {
-		my $config = SDI::Util::SNConfig::get_config();
-		my $db = ( $config->{database}->{sqlite_path} || '.' ) . "/slimservice.$$.db";
-		
-		unlink $db if -e $db;
-		
-		$source = "dbi:SQLite:dbname=$db";
-	}
-	else {
-		my $dbFile = catfile( $prefs->get('librarycachedir'), 'library.db' );
 
-		# we need to migrate long 7.6.0 file names to shorter 7.6.1 filenames: Perl/Windows can't handle the long version
-		_migrateDBFile(catfile( $prefs->get('librarycachedir'), 'squeezebox.db' ), $dbFile);
-		
-		$source = sprintf( $prefs->get('dbsource'), $dbFile );
-	}
+	my $dbFile = catfile( $prefs->get('librarycachedir'), 'library.db' );
+
+	# we need to migrate long 7.6.0 file names to shorter 7.6.1 filenames: Perl/Windows can't handle the long version
+	_migrateDBFile(catfile( $prefs->get('librarycachedir'), 'squeezebox.db' ), $dbFile);
+	
+	$source = sprintf( $prefs->get('dbsource'), $dbFile );
 	
 	return $source;
 }
@@ -121,20 +97,16 @@ sub on_connect_do {
 		'PRAGMA synchronous = OFF',
 		'PRAGMA journal_mode = WAL',
 		'PRAGMA foreign_keys = ON',
-		'PRAGMA wal_autocheckpoint = 200',
-	];
-	
-	# Wweak some memory-related pragmas if dbhighmem is enabled
-	if ( $prefs->get('dbhighmem') ) {
+		'PRAGMA wal_autocheckpoint = ' . (main::SCANNER ? 10000 : 200),
 		# Default cache_size is 2000 pages, a page is normally 1K but may be different
 		# depending on the OS/filesystem.  So default is usually 2MB.
-		# Highmem we will try 20M
-		push @{$sql}, 'PRAGMA cache_size = 20000';
-		
-		# Default temp_store is to create disk files to save memory
-		# Highmem we'll let it use memory
-		push @{$sql}, 'PRAGMA temp_store = MEMORY';
-	}
+		# Highmem we will try 20M (high) or 500M (max)
+		'PRAGMA cache_size = ' . $class->_cacheSize,
+	];
+	
+	# Default temp_store is to create disk files to save memory
+	# Highmem we'll let it use memory
+	push @{$sql}, 'PRAGMA temp_store = MEMORY' if $prefs->get('dbhighmem');
 	
 	# We create this even if main::STATISTICS is not false so that the SQL always works
 	# Track Persistent data is in another file
@@ -145,8 +117,31 @@ sub on_connect_do {
 
 	push @{$sql}, "ATTACH '$persistentdb' AS persistentdb";
 	push @{$sql}, 'PRAGMA persistentdb.journal_mode = WAL';
+	push @{$sql}, 'PRAGMA persistentdb.cache_size = ' . $class->_cacheSize;
 	
 	return $sql;
+}
+
+sub setCacheSize {
+	my $cache_size = __PACKAGE__->_cacheSize;
+	
+	return unless Slim::Schema->hasLibrary;
+	
+	my $dbh = Slim::Schema->dbh;
+	$dbh->do("PRAGMA cache_size = $cache_size");
+	$dbh->do("PRAGMA persistentdb.cache_size = $cache_size");
+}
+
+sub _cacheSize {
+	my $high = $prefs->get('dbhighmem');
+
+	return 2000 if !$high;
+	
+	# scanner doesn't take advantage of a huge buffer
+	return 20000 if main::SCANNER || $high == 1;
+	
+	# maximum memory usage for large collections and lots of memory
+	return 500_000;
 }
 
 sub _migrateDBFile {
@@ -320,6 +315,22 @@ sub afterScan {
 	$class->updateProgress('end');
 }
 
+=head2 optimizeDB()
+
+Called during the Slim::Schema->optimizeDB call to run some DB specific cleanup tasks
+
+=cut
+
+sub optimizeDB {
+	my $class = shift;
+	
+	# only run VACUUM in the scanner, or if no player is active
+	return if !main::SCANNER && grep { $_->power() } Slim::Player::Client::clients();
+	
+	$class->vacuum('library.db');
+	$class->vacuum('persist.db');
+}
+
 =head2 exitScan()
 
 Called as the scanner process exits. Used by main process to detect scanner crashes.
@@ -337,6 +348,7 @@ sub exitScan {
 Called immediately after connect.  Sets up MD5() function.
 
 =cut
+my %postConnectHandlers;
 
 sub postConnect {
 	my ( $class, $dbh ) = @_;
@@ -353,12 +365,40 @@ sub postConnect {
 	# Check if the DB has been optimized (stats analysis)
 	if ( !main::SCANNER ) {
 		# Check for the presence of the sqlite_stat1 table
-		my ($count) = eval { $dbh->selectrow_array( "SELECT COUNT(*) FROM sqlite_stat1 WHERE tbl = 'tracks'", undef, () ) };
+		my ($count) = eval { $dbh->selectrow_array( "SELECT COUNT(*) FROM sqlite_stat1 WHERE tbl = 'tracks' OR tbl = 'images' OR tbl = 'videos'", undef, () ) };
 		
 		if (!$count) {
-			$log->error('Optimizing DB because of missing or empty sqlite_stat1 table');			
-			Slim::Schema->optimizeDB();
+			my ($table) = eval { $dbh->selectrow_array('SELECT name FROM sqlite_master WHERE type="table" AND name="tracks"') };
+			
+			if ($table) {
+				$log->error('Optimizing DB because of missing or empty sqlite_stat1 table');			
+				Slim::Schema->optimizeDB();
+			}
 		}
+	}
+	
+	foreach (keys %postConnectHandlers) {
+		$_->postDBConnect($dbh);
+	}
+}
+
+=head2
+
+Allow plugins and others to register handlers which should be called from postConnect
+
+=cut
+
+sub addPostConnectHandler {
+	my ( $class, $handler ) = @_;
+	
+	if ($handler && $handler->can('postDBConnect')) {
+		$postConnectHandlers{$handler}++
+	}
+	
+	# if we register for the first time, re-initialize the dbh object
+	if ( $postConnectHandlers{$handler} == 1 ) {
+		Slim::Schema->disconnect;
+		Slim::Schema->init;
 	}
 }
 
@@ -372,7 +412,8 @@ sub updateProgress {
 	
 	my $log = logger('scan.scanner');
 	
-	# Scanner does not have an event loop, so use sync HTTP here
+	# Scanner does not have an event loop, so use sync HTTP here.
+	# Don't use Slim::Utils::Network, as it comes with too much overhead.
 	my $host = ( $prefs->get('httpaddr') || '127.0.0.1' ) . ':' . $prefs->get('httpport');
 	
 	my $ua = LWP::UserAgent->new(
@@ -461,6 +502,48 @@ sub pragma {
 	
 	# Pass the pragma to the ArtworkCache database
 	Slim::Utils::ArtworkCache->new->pragma($pragma);
+}
+
+=head2 vacuum()
+
+VACUUM a given database.
+
+If the $optional parameter is passed, the VACUUM will only happen if there's a certain fragmentation.
+
+=cut
+
+sub vacuum {
+	my ( $class, $db, $optional ) = @_;
+
+	my $dbFile = catfile( $prefs->get('librarycachedir'), ($db || 'library.db') );
+	
+	return unless -f $dbFile;
+
+	main::DEBUGLOG && $log->is_debug && $log->debug("Start VACUUM $db");
+	
+	my $source = sprintf( $class->default_dbsource(), $dbFile );
+
+	# this can't be run from the schema_cleanup.sql, as VACUUM doesn't work inside a transaction
+	my $dbh = DBI->connect($source);
+
+	if ($optional) {
+		my $pages = $dbh->selectrow_array('PRAGMA page_count;');
+		my $free  = $dbh->selectrow_array('PRAGMA freelist_count;');
+		my $frag  = ($pages && $free) ? $free / $pages : 0;
+
+		main::DEBUGLOG && $log->is_debug && $log->debug("$dbFile: Pages: $pages; Free: $free; Fragmentation: $frag");
+
+		# don't skip this vacuum if fragmentation is higher than 10%;
+		$optional = 0 if $frag > 0.1;
+	}
+
+	if ( !$optional ) {
+		$dbh->do('PRAGMA temp_store = MEMORY') if $prefs->get('dbhighmem');
+		$dbh->do('VACUUM');
+	}
+	$dbh->disconnect;
+
+	main::DEBUGLOG && $log->is_debug && $log->debug("VACUUM $db done!");
 }
 
 sub _dbFile {

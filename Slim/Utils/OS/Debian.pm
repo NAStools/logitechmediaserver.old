@@ -55,7 +55,7 @@ sub dirsFor {
 		push @dirs, $class->SUPER::dirsFor($dir);
 		push @dirs, "/usr/share/perl5/Slim/Plugin", "/usr/share/squeezeboxserver/Plugins";
 		
-	} elsif ($dir =~ /^(?:strings|revision)$/) {
+	} elsif ($dir =~ /^(?:strings|revision|repositories)$/) {
 
 		push @dirs, "/usr/share/squeezeboxserver";
 
@@ -106,5 +106,29 @@ sub scanner {
 	return '/usr/sbin/squeezeboxserver-scanner';
 }
 
+sub canAutoUpdate { $_[0]->runningFromSource ? 0 : 1 }
+sub installerExtension { 'deb' }; 
+
+sub installerOS {
+	my $class = shift;
+	
+	if ( $class->{osDetails}->{osArch} =~ /^arm/i ) {
+		return 'debarm';
+	} 
+	elsif ( $class->{osDetails}->{osArch} =~ /^x86_64/i ) {
+		return 'debamd64';
+	}
+	elsif ( $class->{osDetails}->{osArch} =~ /^i[3-6]86/i ) {
+		return 'debi386';
+	}
+
+	return 'deb';
+}
+
+sub getUpdateParams {
+	return {
+		cb => \&Slim::Utils::OS::Linux::signalUpdateReady
+	};
+}
 
 1;

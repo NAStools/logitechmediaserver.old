@@ -123,8 +123,8 @@ sub handler {
 	$paramRef->{'disabledextensionsimages'} = $prefs->get('disabledextensionsimages');
 	$paramRef->{'disabledextensionsplaylist'} = $prefs->get('disabledextensionsplaylist');
 
-	$paramRef->{'noimage'} = 1 if !main::IMAGE;
-	$paramRef->{'novideo'} = 1 if !main::VIDEO;
+	$paramRef->{'noimage'} = 1 if !(main::IMAGE && main::MEDIASUPPORT);
+	$paramRef->{'novideo'} = 1 if !(main::VIDEO && main::MEDIASUPPORT);
 
 	return $class->SUPER::handler($client, $paramRef, $pageSetup);
 }

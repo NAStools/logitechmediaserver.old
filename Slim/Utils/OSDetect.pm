@@ -63,15 +63,13 @@ sub init {
 		#print STDOUT "Found custom OS support file for " . $os->name . "\n";
 	};
 
+	if ( $@ && $@ !~ m{^Can't locate Slim/Utils/OS/Custom.pm} ) {
+		warn $@;
+	}
 
 	if (!$os) {		
 
-		if ( main::SLIM_SERVICE ) {
-	
-			require Slim::Utils::OS::SlimService;
-			$os = Slim::Utils::OS::SlimService->new();
-	
-		} elsif ($^O =~/darwin/i) {
+		if ($^O =~/darwin/i) {
 			
 			require Slim::Utils::OS::OSX;
 			$os = Slim::Utils::OS::OSX->new();

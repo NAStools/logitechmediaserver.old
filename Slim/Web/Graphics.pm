@@ -12,6 +12,7 @@ use Slim::Utils::Misc;
 use Slim::Utils::ArtworkCache;
 use Slim::Utils::Prefs;
 use Slim::Utils::ImageResizer;
+use Slim::Web::ImageProxy;
 
 use constant ONE_DAY  => 86400;
 use constant ONE_YEAR => ONE_DAY * 365;
@@ -26,12 +27,8 @@ my $cache;
 sub init {
 	# Get cache for artwork
 	$cache = Slim::Utils::ArtworkCache->new();
-	
-	# Set highmem params for the artwork cache
-	if ( $prefs->get('dbhighmem') ) {
-		$cache->pragma('cache_size = 20000');
-		$cache->pragma('temp_store = MEMORY');
-	}
+
+	Slim::Web::ImageProxy->init();
 
 	if (main::SCANNER) {
 		require Slim::Web::Template::NoWeb;
@@ -96,7 +93,7 @@ sub artworkRequest {
 	# XXX remote URLs (from protocol handler icon)
 	
 	# Check cache for this path
-	if ( my $c = _cached($path) ) {
+	if ( $path !~ m{^imageproxy/} && (my $c = _cached($path)) ) {
 		my $ct = 'image/' . $c->{content_type};
 		$ct =~ s/jpg/jpeg/;
 		$response->content_type($ct);
@@ -136,6 +133,12 @@ sub artworkRequest {
 		main::INFOLOG && $isInfo && $log->info("  Special path translated to $path");
 	}
 	
+	# local image proxy for remote URLs
+	elsif ( $path =~ m{^imageproxy/} ) {
+		Slim::Web::ImageProxy->getImage($client, $path, $params, $callback, $spec, @args);
+		return;
+	}
+	
 	# If path begins with "music" it's a cover path using either coverid
 	# or the old trackid format
 	elsif ( $path =~ m{^(music)/([^/]+)/} || $path =~ m{^(image|video)/([0-9a-f]{8})/} ) {
@@ -145,11 +148,43 @@ sub artworkRequest {
 		# /music/current/cover.jpg (mentioned in CLI docs)
 		if ( $id eq 'current' && $client ) {
 			my $trackObj = Slim::Player::Playlist::song($client);
-			$id = $trackObj->coverid if $trackObj && blessed $trackObj;
 			
-			$path =~ s/current/$id/;
+			if ( $trackObj && blessed $trackObj ) {
+				$id = $trackObj->coverid;
+				
+				# if we're dealing with a remote stream, we'll have to ask a protocol handler to return the cover URL
+				if ( $trackObj->remote ) {
+					my $url     = $trackObj->url;
+					my $handler = Slim::Player::ProtocolHandlers->handlerForURL($url);
+					
+					if ( $handler && $handler->can('getMetadataFor') ) {
+						my $remoteMeta = $handler->getMetadataFor( $client, $url );
 
-			main::INFOLOG && $isInfo && $log->info("  Special path translated to $path");
+						if ( $remoteMeta && (my $cover = $remoteMeta->{cover}) ) {
+
+							if ($cover =~ /^http/) {
+								$id = 'imageproxy/' . $remoteMeta->{cover};
+								$path=~ s/music\/current/$id/;
+							}
+							else {
+								# we need to restore the resize specification on the new URL
+								$cover =~ s/(\.(?:jpe?g|jpe|png|gif|bmp))$/_$spec$1/i; 
+								$path = $cover;
+							}
+
+							main::INFOLOG && $isInfo && $log->info("  Special path translated to $path");
+							
+							Slim::Web::Graphics::artworkRequest($client, $path, $params, $callback, @args);
+							return;
+						}
+					}
+				}
+				else {
+					$path =~ s/current/$id/;
+				}
+
+				main::INFOLOG && $isInfo && $log->info("  Special path translated to $path");
+			}
 		}
 		
 		# Fetch the url and cover values
@@ -176,12 +211,12 @@ sub artworkRequest {
 
 			# Bug 16491: Grab the remoteTrack's coverArt and do the resizing on the fly
 			my $remoteTrack = Slim::Schema::RemoteTrack->fetchById($id);
-			my $coverArtImage = $remoteTrack->coverArt();
-			if( $coverArtImage) {
+
+			if ( $remoteTrack && (my $coverArtImage = $remoteTrack->coverArt()) ) {
 				require Slim::Utils::GDResizer;
 
 				my @arrSpec = split(',', $spec);
-				my ($width, $height, $mode, $bgcolor, $ext) = $arrSpec[0] =~ /^(?:([0-9X]+)x([0-9X]+))?(?:_(\w))?(?:_([\da-fA-F]+))?(?:\.(\w+))?$/;
+				my ($width, $height, $mode, $bgcolor, $ext) = __PACKAGE__->parseSpec($arrSpec[0]);
 				my ($res, $format) = Slim::Utils::GDResizer->resize(
 					original => \$coverArtImage,
 					width    => $width,
@@ -209,6 +244,17 @@ sub artworkRequest {
 			$sth->execute($id);
 			($url, $cover) = $sth->fetchrow_array;
 			$sth->finish;
+			
+			# border case: 8 characters we're assuming it's a cover ID, but it could be a track ID, too
+			if ( (!$url || !$cover) && $type eq 'music' && $id =~ /\d{8}/ ) {
+				$sth = Slim::Schema->dbh->prepare_cached( qq{
+					SELECT url, cover FROM tracks WHERE id = ?
+				} );
+				
+				$sth->execute($id);
+				($url, $cover) = $sth->fetchrow_array;
+				$sth->finish;
+			}
 		}
 		
 		if ( !$url || !$cover ) {
@@ -327,15 +373,14 @@ sub artworkRequest {
 		main::idleStreams();
 		
 		main::INFOLOG && $isInfo && $log->info("  Resizing: $fullpath using spec $spec");
-			
-		Slim::Utils::ImageResizer->resize($fullpath, $path, $spec, sub {
-			# Resized image should now be in cache
-			my $body;
 		
-			if ( my $c = _cached($path) ) {
-				$body = $c->{data_ref};
-				
-				my $ct = 'image/' . $c->{content_type};
+		my $imageCb = sub {
+			my ($body, $format) = @_;
+			
+			$format ||= Slim::Music::Artwork->_imageContentType($body);
+			
+			if ( $body && $format && $format !~ /application/ && ref $body eq 'SCALAR' ) {
+				my $ct = $format =~ /image/ ? $format : 'image/' . $format;
 				$ct =~ s/jpg/jpeg/;
 				$response->content_type($ct);
 				
@@ -365,6 +410,35 @@ sub artworkRequest {
 			}
 		
 			$callback->( $client, $params, $body, @args );
+		};
+		
+		# if we don't want to resize the image, just read from the tag and don't cache the full size image
+		if ( !$spec && (my $ct = Slim::Music::Info::contentType($fullpath)) ) {
+			my $formatClass = Slim::Formats->classForFormat($ct);
+			my $body;
+
+			if (Slim::Formats->loadTagFormatForType($ct) && $formatClass->can('getCoverArt')) {
+				$body = $formatClass->getCoverArt($fullpath);
+			}
+
+			if ($body && length $body) {
+				main::INFOLOG && $isInfo && $log->info("  No Resizing required - return raw image data");
+				
+				$imageCb->(\$body);
+				return;
+			}
+		}
+			
+		Slim::Utils::ImageResizer->resize($fullpath, $path, $spec, sub {
+			my ($body, $format) = @_;
+			
+			# if we didn't get a valid reference returned, try to read from cache
+			if ( !($body && $format && ref $body eq 'SCALAR') && (my $c = _cached($path)) ) {
+				$body = $c->{data_ref};
+				$format = $c->{content_type};
+			}
+		
+			$imageCb->($body, $format);
 		} );
 	
 	}
@@ -383,6 +457,13 @@ sub artworkRequest {
 	}
 	
 	return;
+}
+
+sub parseSpec {
+	my ($class, $spec) = @_;
+	my ($width, $height, $mode, $bgcolor, $ext) = $spec =~ /^(?:([0-9X]+)x([0-9X]+))?(?:_(\w))?(?:_([\da-fA-F]+))?(?:\.(\w+))?$/;
+	
+	return ($width, $height, $mode, $bgcolor, $ext);
 }
 
 1;

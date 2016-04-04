@@ -13,6 +13,7 @@ use strict;
 
 use URI::Escape qw(uri_unescape uri_escape_utf8);
 use List::Util qw(min);
+use Tie::RegexpHash;
 
 use Slim::Control::XMLBrowser;
 use Slim::Formats::XML;
@@ -25,12 +26,25 @@ use Slim::Utils::Favorites;
 use Slim::Utils::Prefs;
 use Slim::Music::TitleFormatter;
 use Slim::Web::HTTP;
+use Slim::Web::ImageProxy qw(proxiedImage);
 use Slim::Web::Pages;
 
 use constant CACHE_TIME => 3600; # how long to cache browse sessions
 
 my $log = logger('formats.xml');
 my $prefs = preferences('server');
+	
+# use a timestamp to let cached pages expire on certain events
+my $cacheTimestamp; 
+if ( !main::SCANNER ) {
+	# Wipe cached data after rescan or library change
+	Slim::Control::Request::subscribe( \&wipeCaches, [['library','rescan'], ['changed','done']] );
+
+	$prefs->setChange( \&wipeCaches, qw(itemsPerPage thumbSize showArtist showYear additionalPlaylistButtons noGenreFilter noRoleFilter searchSubString browseagelimit
+				composerInArtists conductorInArtists bandInArtists variousArtistAutoIdentification titleFormat titleFormatWeb language useUnifiedArtistsList) );
+}
+
+tie my %cacheables, 'Tie::RegexpHash';
 
 sub handleWebIndex {
 	my ( $class, $args ) = @_;
@@ -477,18 +491,17 @@ sub handleFeed {
 						$search = $searchQuery;
 					}
 					
-					if ( main::DEBUGLOG && $log->is_info ) {
+					if ( main::DEBUGLOG && $log->is_debug ) {
 						my $cbname = Slim::Utils::PerlRunTime::realNameForCodeRef( $subFeed->{url} );
-						$log->info( "Fetching OPML from coderef $cbname" );
+						$log->debug( "Fetching OPML from coderef $cbname" );
 					}
 
-					# XXX: maybe need to pass orderBy through
-					my %args = (isWeb => 1, wantMetadata => 1, wantIndex => 1, search => $search, params => $stash->{'query'});
+					my %args = (isWeb => 1, wantMetadata => 1, wantIndex => 1, search => $search, params => $stash->{'query'}, library_id => $stash->{library_id}, orderBy => $stash->{'orderBy'});
 					my $index = $stash->{'start'};
 
 					if ($depth == $levels) {
 						$args{'index'} = $index;
-						$args{'quantity'} = $stash->{'itemsPerPage'} || $prefs->get('itemsPerPage');
+						$args{'quantity'} = $stash->{'itemsPerPage'} || ($stash->{action} =~ /^(?:play|add)all$/i && $prefs->get('maxPlaylistLength')) || $prefs->get('itemsPerPage');
 					} elsif ($depth < $levels) {
 						$args{'index'} = $index[$depth];
 						$args{'quantity'} = 1;
@@ -523,7 +536,8 @@ sub handleFeed {
 			 && !($subFeed->{type} && $subFeed->{type} eq 'search')
 			 && !(ref $subFeed->{'url'}) ) 
 		) {
-			$subFeed->{'image'} ||= Slim::Player::ProtocolHandlers->iconForURL($subFeed->{'play'} || $subFeed->{'url'});
+			$subFeed->{'image'} ||= $subFeed->{'cover'} || $subFeed->{'icon'} || Slim::Player::ProtocolHandlers->iconForURL($subFeed->{'play'} || $subFeed->{'url'});
+			$subFeed->{'image'} = proxiedImage($subFeed->{'image'});
 
 			$stash->{'streaminfo'} = {
 				'item'  => $subFeed,
@@ -571,7 +585,7 @@ sub handleFeed {
 	}
 	
 	$stash->{'crumb'}     = \@crumb;
-	$stash->{'image'}     = $feed->{'image'} || $feed->{'cover'} || $stash->{'image'};
+	$stash->{'image'}     = proxiedImage($feed->{'image'} || $feed->{'cover'} || $stash->{'image'});
 
 	foreach (qw(items type orderByList playlist_id playlistTitle total)) {
 		$stash->{$_} = $feed->{$_} if defined $feed->{$_};
@@ -688,6 +702,7 @@ sub handleFeed {
 						"$_:" . $actionItem->{fixedParams}->{$_}
 					} keys %{ $actionItem->{fixedParams} };
 					
+					main::DEBUGLOG && $log->is_debug && $log->debug(Data::Dump::dump($command));
 					$client->execute($command);
 				}
 			} elsif ($action eq 'insert') {
@@ -823,7 +838,6 @@ sub handleFeed {
 		
 		{
 			my $details = {};
-			my $mixerlinks = {};
 			my $i = 0;
 			
 			my $roles = join ('|', Slim::Schema::Contributor->contributorRoles());
@@ -846,24 +860,6 @@ sub handleFeed {
 						};
 						
 						$item->{'ignore'} = 1;
-					}
-
-					elsif ($label eq 'mixers') {
-						
-						$details->{'mixers'} ||= [];
-						
-						my $mixer = {
-							item => $stash->{'sess'}
-						};
-						
-						my ($mixerkey, $mixerlink) = each %{ $item->{'web'}->{'item'}->{'mixerlinks'} };
-						$stash->{'mixerlinks'}->{$mixerkey} = $mixerlink;
-						
-						foreach ( keys %{ $item->{'web'}->{'item'}} ) {
-							$mixer->{$_} = $item->{'web'}->{'item'}->{$_};
-						}
-
-						push @{ $details->{'mixers'} }, $mixer;
 					}
 
 					elsif ($label eq 'GENRE') { 
@@ -1002,7 +998,7 @@ sub handleFeed {
 					$type, 
 					$item->{'parser'}, 
 					1, 
-					$item->{'image'} || $item->{'icon'} || Slim::Player::ProtocolHandlers->iconForURL($furl) 
+					proxiedImage($item->{'image'} || $item->{'icon'} || Slim::Player::ProtocolHandlers->iconForURL($furl)) 
 				);
 			} elsif ($stash->{'action'} eq 'favdel') {
 				$favs->deleteUrl( $furl );
@@ -1139,8 +1135,12 @@ sub handleSubFeed {
 	# Pass-through forceRefresh flag
 	$subFeed->{forceRefresh} = 1 if $feed->{forceRefresh};
 	
-	foreach (qw(offset total actions image cover albumData albumInfo orderByList indexList playlist_id playlistTitle)) {
+	foreach (qw(offset total actions albumData albumInfo orderByList indexList playlist_id playlistTitle)) {
 		$subFeed->{$_} = $feed->{$_} if defined $feed->{$_};
+	}
+
+	foreach (qw(image cover)) {
+		$subFeed->{$_} = proxiedImage($feed->{$_}) if defined $feed->{$_};
 	}
 	
 	# Mark this as coming from subFeed, so that we know to ignore forceRefresh
@@ -1163,7 +1163,11 @@ sub handleSubFeed {
 }
 
 sub processTemplate {
-	return Slim::Web::HTTP::filltemplatefile( @_ );
+	my $page = Slim::Web::HTTP::filltemplatefile( @_ );
+	
+	Slim::Utils::Cache->new->set($_[1]->{renderCacheKey}, $page, 86400) if $page && $_[1]->{renderCacheKey};
+
+	return $page;
 }
 
 sub init {
@@ -1189,9 +1193,7 @@ sub _webLinkDone {
 }
 
 sub webLink {
-	my $client  = $_[0];
-	my $args    = $_[1];
-	my $response= $_[4];
+	my ( $client, $args, $callback, $httpClient, $response ) = @_;
 	my $allArgs = \@_;
 
 	# get parameters and construct CLI command
@@ -1242,6 +1244,32 @@ sub webLink {
 	
 	push @verbs, 'orderBy:' . $args->{'orderBy'} if $args->{'orderBy'};
 
+	my $renderCacheKey;
+	if ( !main::NOBROWSECACHE && $cacheables{ $args->{path} } && $args->{url_query} !~ /\baction=/ && $args->{url_query} !~ /\bindex=\d+\.\d+\.\d+/ && !Slim::Music::Import->stillScanning() ) {
+		
+		# let cache expire between server restarts
+		$cacheTimestamp ||= time();
+		
+		# cache key needs to make sure we respect the various prefs and cookies which control the display mode...
+		$renderCacheKey = join(':', 
+			'blweb', 
+			$cacheTimestamp, 
+			$index, 
+			$quantity, 
+			(map { $params{$_} || '' } qw(mode sort index), @Slim::Menu::BrowseLibrary::topLevelArgs),
+			(map { $args->{$_} || '' } qw(artwork player sess index start systemSkin skinOverride systemLanguage webroot thumbSize serverResizesArt orderBy)),
+			Slim::Music::VirtualLibraries->getLibraryIdForClient($client),
+		);
+
+		if ( my $cached = Slim::Utils::Cache->new->get($renderCacheKey) ) {
+			main::DEBUGLOG && $log->debug("Returning cached copy of rendered HTML page.");
+			$callback->( $client, $args, $cached, $httpClient, $response );
+			return;
+		}
+	}
+		
+	$args->{renderCacheKey} = $renderCacheKey;
+
 	# execute CLI command
 	main::INFOLOG && $log->is_info && $log->info('Use CLI: ', join(' ', (defined $client ? $client->id : 'noClient'), @verbs));
 	my $proxiedRequest = Slim::Control::Request::executeRequest( $client, \@verbs );
@@ -1253,6 +1281,21 @@ sub webLink {
 	} else {
 		_webLinkDone($client, $proxiedRequest->getResults, $title, $allArgs);
 	}
+}
+
+sub addCacheable {
+	my ( $class, $regex ) = @_;
+	
+	if ( ref $regex ne 'Regexp' ) {
+		$log->error( 'addCacheable called without a regular expression' );
+		return;
+	}
+
+	$cacheables{$regex} = $regex;
+}
+
+sub wipeCaches {
+	$cacheTimestamp = time();
 }
 
 sub _makeWebLink {

@@ -34,12 +34,6 @@ use Slim::Utils::Network;
 my $log = logger('menu.systeminfo');
 my $prefs = preferences('server');
 
-# some SN values
-my $_ss_version = 'r0';
-my $_sn_version = 'r0';
-my $_versions_mtime = 0;
-my $_versions_last_checked = 0;
-
 sub init {
 	my $class = shift;
 	$class->SUPER::init();
@@ -63,56 +57,41 @@ sub registerDefaultInfoProviders {
 	my $class = shift;
 
 	$class->SUPER::registerDefaultInfoProviders();
+
+	$class->registerInfoProvider( server => (
+		after => 'top',
+		func  => \&infoServer,
+	) );
+
+	$class->registerInfoProvider( library => (
+		after => 'server',
+		func  => \&infoLibrary,
+	) );
 	
-	if ( main::SLIM_SERVICE ) {
-		$class->registerInfoProvider( squeezenetwork => (
-			after => 'top',
-			func  => \&infoSqueezeNetwork,
-		) );
+	$class->registerInfoProvider( currentplayer => (
+		after => 'library',
+		func  => \&infoCurrentPlayer,
+	) );
 	
-		$class->registerInfoProvider( currentplayer => (
-			after => 'squeezenetwork',
-			func  => \&infoCurrentPlayer,
-		) );
-	}
+	$class->registerInfoProvider( players => (
+		after => 'currentplayer',
+		func  => \&infoPlayers,
+	) );
 	
-	else {		
-		$class->registerInfoProvider( server => (
-			after => 'top',
-			func  => \&infoServer,
-		) );
+	$class->registerInfoProvider( dirs => (
+		after => 'players',
+		func  => \&infoDirs,
+	) );
 	
-		$class->registerInfoProvider( library => (
-			after => 'server',
-			func  => \&infoLibrary,
-		) );
-		
-		$class->registerInfoProvider( currentplayer => (
-			after => 'library',
-			func  => \&infoCurrentPlayer,
-		) );
-		
-		$class->registerInfoProvider( players => (
-			after => 'currentplayer',
-			func  => \&infoPlayers,
-		) );
-		
-		$class->registerInfoProvider( dirs => (
-			after => 'players',
-			func  => \&infoDirs,
-		) );
-		
-		$class->registerInfoProvider( logs => (
-			after => 'dirs',
-			func  => \&infoLogs,
-		) );
-		
-		$class->registerInfoProvider( plugins => (
-			after => 'logs',
-			func  => \&infoPlugins,
-		) );
-	}
+	$class->registerInfoProvider( logs => (
+		after => 'dirs',
+		func  => \&infoLogs,
+	) );
 	
+	$class->registerInfoProvider( plugins => (
+		after => 'logs',
+		func  => \&infoPlugins,
+	) );
 }
 
 sub infoPlayers {
@@ -169,6 +148,7 @@ sub _getPlayerInfo {
 	my $info = [
 #		{ INFORMATION_PLAYER_NAME_ABBR       => $client->name },
 		{ INFORMATION_PLAYER_MODEL           => $client->modelName },
+		{ PLAYER_TYPE                        => $client->model },
 		{ INFORMATION_FIRMWARE_ABBR          => $client->revision },
 		{ INFORMATION_PLAYER_IP              => $client->ip },
 #		{ INFORMATION_PLAYER_PORT            => $client->port },
@@ -228,7 +208,7 @@ sub infoLibrary {
 		} 
 	}
 	
-	my $totals = Slim::Schema->totals;
+	my $totals = Slim::Schema->totals();
 	
 	my $items = {
 		name => cstring($client, 'INFORMATION_MENU_LIBRARY'),
@@ -261,7 +241,7 @@ sub infoLibrary {
 			{
 				type => 'text',
 				name => cstring($client, 'INFORMATION_TIME') . cstring($client, 'COLON') . ' '
-							. Slim::Utils::DateTime::timeFormat(Slim::Schema->totalTime),
+							. Slim::Utils::DateTime::timeFormat(Slim::Schema->totalTime($client)),
 			},
 		],
 
@@ -271,29 +251,32 @@ sub infoLibrary {
 		},
 	};
 
-	my ($request, $results);
+	# don't bother counting images/videos unless media are enabled
+	if ( main::MEDIASUPPORT ) {
+		my ($request, $results);
+		
+		# XXX - no simple access to result sets for images/videos yet?
+		if (main::VIDEO) {
+			$request = Slim::Control::Request::executeRequest( $client, ['video_titles', 0, 0] );
+			$results = $request->getResults();
+		
+			unshift @{ $items->{items} }, {
+				type => 'text',
+				name => cstring($client, 'INFORMATION_VIDEOS') . cstring($client, 'COLON') . ' '
+					. ($results && $results->{count} ? Slim::Utils::Misc::delimitThousands($results->{count}) : 0),
+			};
+		}
 	
-	# XXX - no simple access to result sets for images/videos yet?
-	if (main::VIDEO) {
-		$request = Slim::Control::Request::executeRequest( $client, ['video_titles', 0, 0] );
-		$results = $request->getResults();
-	
-		unshift @{ $items->{items} }, {
-			type => 'text',
-			name => cstring($client, 'INFORMATION_VIDEOS') . cstring($client, 'COLON') . ' '
-				. ($results && $results->{count} ? Slim::Utils::Misc::delimitThousands($results->{count}) : 0),
-		};
-	}
-
-	if (main::IMAGE) {
-		$request = Slim::Control::Request::executeRequest( $client, ['image_titles', 0, 0] );
-		$results = $request->getResults();
-	
-		unshift @{ $items->{items} }, {
-			type => 'text',
-			name => cstring($client, 'INFORMATION_IMAGES') . cstring($client, 'COLON') . ' '
-				. ($results && $results->{count} ? Slim::Utils::Misc::delimitThousands($results->{count}) : 0),
-		};
+		if (main::IMAGE) {
+			$request = Slim::Control::Request::executeRequest( $client, ['image_titles', 0, 0] );
+			$results = $request->getResults();
+		
+			unshift @{ $items->{items} }, {
+				type => 'text',
+				name => cstring($client, 'INFORMATION_IMAGES') . cstring($client, 'COLON') . ' '
+					. ($results && $results->{count} ? Slim::Utils::Misc::delimitThousands($results->{count}) : 0),
+			};
+		}
 	}
 	
 	return $items;
@@ -357,6 +340,12 @@ sub infoServer {
 			name => cstring($client, 'PERL_VERSION') . cstring($client, 'COLON') . ' '
 						. $Config{'version'} . ' - ' . $Config{'archname'},
 		},
+		
+		# XXX - let's show the Audio::Scan version until we've updated them all
+		{
+			type => 'text',
+			name => 'Audio::Scan' . cstring($client, 'COLON') . ' ' . $Audio::Scan::VERSION,
+		},
 	];
 	
 	if ( Slim::Schema::hasLibrary() ) {
@@ -387,6 +376,7 @@ sub infoDirs {
 		{ INFORMATION_PREFSDIR   => Slim::Utils::Prefs::dir() },
 		# don't display SC's own plugin folder - the user shouldn't care about it
 		{ INFORMATION_PLUGINDIRS => join(", ", grep {$_ !~ m|Slim/Plugin|} Slim::Utils::OSDetect::dirsFor('Plugins')) },
+		{ INFORMATION_BINDIRS => join(", ", Slim::Utils::Misc::getBinPaths()) },
 	];
 	
 	my $item = {
@@ -480,79 +470,6 @@ sub infoLogs {
 			type => 'text',
 			name => cstring($client, "SETUP_DEBUG_${key}_LOG") . cstring($client, 'COLON') . ' ' . $value
 		}
-	}
-	
-	return $item;
-}
-
-sub infoSqueezeNetwork {
-	my $client = shift;
-	my $item;
-	
-	if ( main::SLIM_SERVICE ) {
-
-		my $time = time();
-
-		if ( ($time - $_versions_last_checked) > 60 ) {
-			$_versions_last_checked = $time;
-
-			my @stats = stat('/etc/sn/versions');
-			my $mtime = $stats[9] || -1;
-
-			if ( $mtime != $_versions_mtime ) {
-				$_versions_mtime = $mtime;
-
-				my $ok = open(my $vfile, '<', '/etc/sn/versions');
-				
-				if ($ok) {
-					local $_;
-					while(<$vfile>) {
-						chomp;
-						next unless /^(S[NS]):([^:]+)$/;
-						$_sn_version = $2 if $1 eq 'SN';
-
-						# SS version is only read once because this instance may
-						# be running an older version than the server has
-						if ( $_ss_version eq 'r0' ) {
-							$_ss_version = $2 if $1 eq 'SS';
-						}
-					}
-					
-					close($vfile);
-				}
-			}
-		}
-
-		my $config = SDI::Util::SNConfig::get_config();
-		my $dcname = $config->{dcname};
-		my $dcdesc = $config->{datacenter_info}->{$dcname}->{desc} || 'Unknown';
-
-		$item = {
-			name  => cstring($client, 'INFORMATION_MENU_SERVER'),
-			items => [
-				{
-					type => 'text',
-					name => sprintf('%s SS%s %s, SN%s %s',
-						cstring($client, 'SERVER_VERSION'),
-						cstring($client, 'COLON'),
-						$_ss_version,
-						cstring($client, 'COLON'),
-						$_sn_version					
-					)
-				},
-				
-				{
-					type => 'text',
-					name => cstring($client, 'INFORMATION_DATACENTER') . cstring($client, 'COLON') . ' ' . $dcdesc,
-				},
-				
-				{
-					type => 'text',
-					name => cstring($client, 'INFORMATION_SN_ACCOUNT') . cstring($client, 'COLON') . ' ' . $client->playerData->userid->email,	  
-				},
-			]
-		};
-		
 	}
 	
 	return $item;

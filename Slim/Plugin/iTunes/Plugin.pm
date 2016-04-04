@@ -26,6 +26,7 @@ my $log = Slim::Utils::Log->addLogCategory({
 my $prefs = preferences('plugin.itunes');
 
 $prefs->migrate(1, sub {
+	require Slim::Utils::Prefs::OldPrefs;
 	$prefs->set('itunes',          Slim::Utils::Prefs::OldPrefs->get('itunes'));
 	$prefs->set('scan_interval',   Slim::Utils::Prefs::OldPrefs->get('itunesscaninterval')   || 3600      );
 	$prefs->set('ignore_disabled', Slim::Utils::Prefs::OldPrefs->get('ignoredisableditunestracks') || 0   );
@@ -96,6 +97,13 @@ sub initPlugin {
 	if ( main::WEBUI ) {
 		Slim::Plugin::iTunes::Settings->new;
 	}
+
+	# register importer, but don't initialize it, as it's only being run in the external scanner
+	Slim::Music::Import->addImporter('Slim::Plugin::iTunes::Importer', {
+		'type'   => 'file',
+		'weight' => 20,
+		'use'    => $prefs->get('itunes'),
+	});
 
 	return 1 if $class->initialized;
 

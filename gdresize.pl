@@ -17,6 +17,8 @@ use constant SCANNER      => 0;
 use constant WEBUI        => 0;
 use constant ISWINDOWS    => ( $^O =~ /^m?s?win/i ) ? 1 : 0;
 use constant DEBUG        => ( grep { /--debug/ } @ARGV ) ? 1 : 0;
+use constant LOCALFILE    => 0;
+use constant NOMYSB       => 1;
 
 BEGIN {
 	use Slim::bootstrap ();

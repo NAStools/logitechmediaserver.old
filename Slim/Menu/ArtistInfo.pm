@@ -195,9 +195,10 @@ sub playArtist {
 	$jive->{style} = 'itemplay';
 
 	push @{$items}, {
-		type => 'text',
-		name => $play_string,
-		jive => $jive, 
+		type        => 'text',
+		playcontrol => 'play',
+		name        => $play_string,
+		jive        => $jive, 
 	};
 	
 	return $items;
@@ -243,9 +244,10 @@ sub addArtist {
 	$jive->{actions} = $actions;
 
 	push @{$items}, {
-		type => 'text',
-		name => $add_string,
-		jive => $jive, 
+		type        => 'text',
+		playcontrol => $cmd,
+		name        => $add_string,
+		jive        => $jive, 
 	};
 	
 	return $items;
@@ -267,7 +269,7 @@ sub _findDBCriteria {
 tie my %cachedFeed, 'Tie::Cache::LRU', 2;
 
 sub cliQuery {
-	$log->debug('cliQuery');
+	main::DEBUGLOG && $log->is_debug && $log->debug('cliQuery');
 	my $request = shift;
 	
 	# WebUI or newWindow param from SP side results in no
