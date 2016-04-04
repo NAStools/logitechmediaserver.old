@@ -1,3 +1,13 @@
+logitechmediaserver (7.9.0.b7dfc80-nt1) unstable; urgency=medium
+
+  * Add lang attribute to Description
+  * Remove custom HTTP port
+  * Imported Upstream version 7.9.0.b7dfc80
+  * Update packaging for 7.9.0
+  * Resize logo to 150x150 to follow SDK
+
+ -- NAStools <dev@nas.tools>  Mon, 04 Apr 2016 13:25:20 -0700
+
 logitechmediaserver (7.7.5-nt1) UNRELEASED; urgency=medium
 
   * Initial release.
