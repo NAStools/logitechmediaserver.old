@@ -1,3 +1,9 @@
+logitechmediaserver (7.9.0.b7dfc80-nt2) unstable; urgency=medium
+
+  * Add package dependency for GCC OpenMP library
+
+ -- NAStools <dev@nas.tools>  Tue, 03 May 2016 12:12:25 -0700
+
 logitechmediaserver (7.9.0.b7dfc80-nt1) unstable; urgency=medium
 
   * Add lang attribute to Description
