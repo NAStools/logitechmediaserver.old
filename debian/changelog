@@ -1,3 +1,10 @@
+logitechmediaserver (1:7.9.0~20160617.858e1e0-nt1) unstable; urgency=medium
+
+  * Imported Upstream version 7.9.0~20160617.858e1e0
+  * Add support for AAC/ALAC files
+
+ -- NAStools <dev@nas.tools>  Fri, 17 Jun 2016 11:53:17 -0700
+
 logitechmediaserver (7.9.0.b7dfc80-nt2) unstable; urgency=medium
 
   * Add package dependency for GCC OpenMP library
