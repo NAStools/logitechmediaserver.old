@@ -100,6 +100,7 @@ my $log = logger('database.virtuallibraries');
 my %libraries;
 my %totals;
 my $updateHook;
+my $sqlHelperClass;
 
 sub init {
 	my $class = shift;
@@ -110,7 +111,7 @@ sub init {
 	} );
 	
 	if (!main::SCANNER) {
-		my $sqlHelperClass = Slim::Utils::OSDetect->getOS()->sqlHelperClass();
+		$sqlHelperClass = Slim::Utils::OSDetect->getOS()->sqlHelperClass();
 
 		# SQLite only: automatically trigger library updates on table changes
 		if ($sqlHelperClass =~ /SQLite/i) {
@@ -205,17 +206,22 @@ sub registerLibrary {
 	Slim::Music::Import->useImporter( $class, 1 );
 
 	if (!main::SCANNER) {
-		# check whether library has already been built	
-		my $sth = Slim::Schema->dbh->prepare_cached(
-			"SELECT COUNT(1) FROM library_track WHERE library = ? LIMIT 1"
-		);
-		$sth->execute($id2);
-		my ($count) = $sth->fetchrow_array;
-		$sth->finish;
-	
-		if (!$count) {
-			$log->warn(sprintf('Library "%s" has not been created yet. Building it now.', $libraries{$id2}->{name}));
-			$class->rebuild($id2);
+		if ( Slim::Music::Import->stillScanning ) {
+			$log->error("Can't create the library view at this point, as the scanner is running: " . $args->{name});
+		}
+		else {
+			# check whether library has already been built	
+			my $sth = Slim::Schema->dbh->prepare_cached(
+				"SELECT COUNT(1) FROM library_track WHERE library = ? LIMIT 1"
+			);
+			$sth->execute($id2);
+			my ($count) = $sth->fetchrow_array;
+			$sth->finish;
+		
+			if (!$count) {
+				$log->warn(sprintf('Library "%s" has not been created yet. Building it now.', $libraries{$id2}->{name}));
+				$class->rebuild($id2);
+			}
 		}
 	}
 	
@@ -290,11 +296,13 @@ sub rebuild {
 	
 		my $dbh = Slim::Schema->dbh;
 	
-		# use SQLite's progress handler to give the streams some air to breathe
-		$dbh->sqlite_progress_handler(10_000, sub {
-			main::idleStreams();
-			return;
-		}) unless main::SCANNER; 
+		# SQLite only: give server some air to breathe
+		if ( !main::SCANNER && $sqlHelperClass =~ /SQLite/i ) {
+			$dbh->sqlite_progress_handler(10_000, sub {
+				main::idleStreams();
+				return;
+			}); 
+		}
 	
 		# SQL code is supposed to re-build the full library. Delete the old values first:
 		my $delete_sth = $dbh->prepare_cached('DELETE FROM library_track WHERE library = ?');
@@ -355,8 +363,9 @@ sub rebuild {
 		});
 		$genres_sth->execute($id, $id);
 	
-		$dbh->sqlite_progress_handler(0, undef) unless main::SCANNER;
-		
+		if ( !main::SCANNER && $sqlHelperClass =~ /SQLite/i ) {
+			$dbh->sqlite_progress_handler(0, undef);
+		}
 	}
 	
 	# Tell everyone who needs to know

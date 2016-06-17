@@ -1,6 +1,14 @@
 package Slim::Plugin::Deezer::ProtocolHandler;
 
-# $Id$
+# Logitech Media Server Copyright 2001-2016 Logitech.
+# This program is free software; you can redistribute it and/or
+# modify it under the terms of the GNU General Public License,
+# version 2.
+#
+# This program is distributed in the hope that it will be useful,
+# but WITHOUT ANY WARRANTY; without even the implied warranty of
+# MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+# GNU General Public License for more details.
 
 use strict;
 use base qw(Slim::Player::Protocols::HTTP);
@@ -106,6 +114,37 @@ sub isRepeatingStream {
 	my ( undef, $song ) = @_;
 	
 	return $song->track()->url =~ /\.dzr$/;
+}
+
+sub explodePlaylist {
+	my ( $class, $client, $url, $cb ) = @_;
+	
+	my $tracks = [];
+
+	if ( $url =~ m{^deezer://((?:playlist|album):[0-9a-z]+)}i ) {
+		my $id = $1;
+		
+		Slim::Networking::SqueezeNetwork->new(
+			sub {
+				my $http = shift;
+				my $tracks = eval { from_json( $http->content ) };
+				$cb->($tracks || []);
+			},
+			sub {
+				$cb->([])
+			},
+			{
+				client => $client
+			}
+		)->get(
+			Slim::Networking::SqueezeNetwork->url(
+				'/api/deezer/v1/playback/getTracksForID?id=' . uri_escape_utf8($id),
+			)
+		);
+	}
+	else {
+		$cb->([$url])
+	}
 }
 
 # Check if player is allowed to skip, using canSkip value from SN
@@ -537,6 +576,7 @@ sub getMetadataFor {
 		my $song = $client->currentSongForUrl($url);
 		if (!$song || !($url = $song->pluginData('radioTrackURL'))) {
 			return {
+				title     => $client->string('PLUGIN_DEEZER_SMART_RADIO'),
 				bitrate   => '320k CBR',
 				type      => 'MP3 (Deezer)',
 				icon      => $icon,
