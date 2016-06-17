@@ -1,6 +1,7 @@
 debian/readynas/fvapp-nastools-logitechmediaserver.service apps/nastools-logitechmediaserver
 debian/readynas/config.xml apps/nastools-logitechmediaserver
 debian/readynas/logo.png apps/nastools-logitechmediaserver
+debian/custom-convert.conf apps/nastools-logitechmediaserver/slimserver
 Bin apps/nastools-logitechmediaserver/slimserver
 cleanup.pl apps/nastools-logitechmediaserver/slimserver
 convert.conf apps/nastools-logitechmediaserver/slimserver
